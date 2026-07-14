@@ -1,19 +1,52 @@
 <?php
+
 session_start();
 
-if(!isset($_SESSION['loggedin']))
+include("../config/db.php");
+include("../includes/auth.php");
+
+if($_SESSION['role']!="Karyashala Admin")
 {
     header("Location:../index.php");
     exit();
 }
 
-if($_SESSION['role']!="karyashala")
-{
-    header("Location:../index.php");
-    exit();
-}
+/* ===============================
+   DASHBOARD COUNTS
+=============================== */
 
-require_once("../config/db.php");
+$totalEmployees = mysqli_fetch_assoc(mysqli_query($conn,"
+SELECT COUNT(*) AS total
+FROM employee e
+LEFT JOIN roles r ON e.ic_no=r.ic_no
+WHERE r.ic_no IS NULL
+"));
+
+$attended = mysqli_fetch_assoc(mysqli_query($conn,"
+SELECT COUNT(*) AS total
+FROM workshops
+WHERE attendance_status='Attended'
+"));
+
+$pending = mysqli_fetch_assoc(mysqli_query($conn,"
+SELECT COUNT(*) AS total
+FROM workshops
+WHERE attendance_status='Pending'
+"));
+
+$absent = mysqli_fetch_assoc(mysqli_query($conn,"
+SELECT COUNT(*) AS total
+FROM workshops
+WHERE attendance_status='Absent'
+"));
+
+$activities = mysqli_query($conn,"
+SELECT activity,activity_date
+FROM activity_log
+ORDER BY activity_date DESC
+LIMIT 5
+");
+
 ?>
 
 <!DOCTYPE html>
@@ -26,125 +59,254 @@ require_once("../config/db.php");
 
 <title>Karyashala Dashboard</title>
 
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/sidebar.css">
+<link rel="stylesheet" href="../css/navbar.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 </head>
 
 <body>
 
-<!-- ================= NAVBAR ================= -->
+<?php include("../includes/sidebar.php"); ?>
 
-<div class="navbar">
-
-    <h2>हिंदी कार्यशाला पोर्टल</h2>
-
-    <div>
-
-        Welcome,
-
-        <b><?php echo $_SESSION['name']; ?></b>
-
-    </div>
-
-</div>
-
-<!-- ================= SIDEBAR ================= -->
-
-<div class="sidebar">
-
-    <a href="dashboard.php"> Dashboard</a>
-
-    <a href="view.php"> View Employees</a>
-
-    <a href="update.php"> Update Attendance</a>
-
-    <a href="report.php"> Get Report</a>
-
-    <a href="../logout.php"> Logout</a>
-
-</div>
-
-<!-- ================= CONTENT ================= -->
+<?php include("../includes/navbar.php"); ?>
 
 <div class="content">
 
-<h2>Karyashala Admin Dashboard</h2>
+<h2>
+<i class="fa-solid fa-gauge-high"></i>
+Dashboard
+</h2>
 
-<hr><br>
+<p>
+Welcome back,
+<b><?php echo $_SESSION['name']; ?></b>
+</p>
 
-<div style="display:flex;gap:20px;flex-wrap:wrap;">
+<!-- CARDS -->
 
-<!-- Total Employees -->
+<div class="card-container">
 
-<div style="background:white;
-padding:20px;
-width:220px;
-border-radius:8px;
-box-shadow:0px 0px 10px #ccc;">
+<div class="dashboard-card">
 
-<h3>Total Employees</h3>
+<i class="fa-solid fa-users"></i>
 
-<?php
+<h3><?php echo $totalEmployees['total']; ?></h3>
 
-$q=mysqli_query($conn,"SELECT COUNT(*) total FROM employee");
-
-$r=mysqli_fetch_assoc($q);
-
-?>
-
-<h1><?php echo $r['total']; ?></h1>
+<p>Total Employees</p>
 
 </div>
 
-<!-- Workshop Records -->
+<div class="dashboard-card">
 
-<div style="background:white;
-padding:20px;
-width:220px;
-border-radius:8px;
-box-shadow:0px 0px 10px #ccc;">
+<i class="fa-solid fa-user-check"></i>
 
-<h3>Workshop Records</h3>
+<h3><?php echo $attended['total']; ?></h3>
 
-<?php
+<p>Attended</p>
 
-$q=mysqli_query($conn,"SELECT COUNT(*) total FROM workshops");
+</div>
 
-$r=mysqli_fetch_assoc($q);
+<div class="dashboard-card">
 
-?>
+<i class="fa-solid fa-user-clock"></i>
 
-<h1><?php echo $r['total']; ?></h1>
+<h3><?php echo $pending['total']; ?></h3>
+
+<p>Pending</p>
+
+</div>
+
+<div class="dashboard-card">
+
+<i class="fa-solid fa-user-xmark"></i>
+
+<h3><?php echo $absent['total']; ?></h3>
+
+<p>Absent</p>
 
 </div>
 
 </div>
 
-<br><br>
+<!-- QUICK ACTION -->
 
-<h3>Quick Menu</h3>
+<div class="quick-actions">
 
-<br>
+<a href="view.php" class="action-btn">
 
-<a href="view.php" class="btn btn-edit">
+<i class="fa-solid fa-users"></i>
 
 View Employees
 
 </a>
 
-<a href="update.php" class="btn btn-save">
+<a href="update.php" class="action-btn">
+
+<i class="fa-solid fa-user-pen"></i>
 
 Update Attendance
 
 </a>
 
-<a href="report.php" class="btn btn-report">
+</div>
 
-Generate Report
+<br>
 
-</a>
+<!-- MAIN SECTION -->
+
+<div class="dashboard-middle">
+
+<div class="activity-box">
+
+<h3>
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+Recent Activities
+
+</h3>
+
+<table class="activity-table">
+
+<tr>
+
+<th>Activity</th>
+
+<th>Date</th>
+
+</tr>
+
+<?php
+
+while($row=mysqli_fetch_assoc($activities))
+
+{
+
+?>
+
+<tr>
+
+<td><?php echo $row['activity']; ?></td>
+
+<td><?php echo date("d M Y H:i",strtotime($row['activity_date'])); ?></td>
+
+</tr>
+
+<?php
+
+}
+
+?>
+
+</table>
 
 </div>
+
+<div class="chart-box">
+
+<h3>
+
+Attendance
+
+</h3>
+
+<canvas id="attendanceChart"></canvas>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+new Chart(
+
+document.getElementById("attendanceChart"),
+
+{
+
+type:"doughnut",
+
+data:{
+
+labels:[
+
+"Attended",
+
+"Pending",
+
+"Absent"
+
+],
+
+datasets:[{
+
+data:[
+
+<?php echo $attended['total']; ?>,
+
+<?php echo $pending['total']; ?>,
+
+<?php echo $absent['total']; ?>
+
+],
+
+backgroundColor:[
+
+"#22c55e",
+
+"#fbbf24",
+
+"#ef4444"
+
+],
+
+borderWidth:0
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+
+plugins:{
+
+legend:{
+
+position:"bottom",
+
+labels:{
+
+color:"white",
+
+font:{
+
+size:13
+
+}
+
+}
+
+}
+
+}
+
+}
+
+}
+
+);
+
+</script>
 
 </body>
 

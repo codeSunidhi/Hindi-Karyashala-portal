@@ -1,52 +1,17 @@
 <?php
+
 session_start();
 
-if (!isset($_SESSION['loggedin']) || $_SESSION['role'] != "karyashala") {
+include("../config/db.php");
+include("../includes/auth.php");
+
+if($_SESSION['role']!="Karyashala Admin")
+{
     header("Location:../index.php");
     exit();
 }
 
-require_once("../config/db.php");
-
-/* ---------------- SAVE ---------------- */
-
-if(isset($_POST['save']))
-{
-    $ic_no = $_POST['ic_no'];
-    $date2025 = $_POST['date2025'];
-    $date2026 = $_POST['date2026'];
-
-    // Delete old records
-    mysqli_query($conn,"DELETE FROM workshops WHERE ic_no='$ic_no' AND YEAR(attended_date)=2025");
-    mysqli_query($conn,"DELETE FROM workshops WHERE ic_no='$ic_no' AND YEAR(attended_date)=2026");
-
-    // Insert new 2025 record
-    if($date2025!="")
-    {
-        mysqli_query($conn,"
-        INSERT INTO workshops(ic_no,title,attended_date)
-        VALUES('$ic_no','Hindi Workshop','$date2025')
-        ");
-    }
-
-    // Insert new 2026 record
-    if($date2026!="")
-    {
-        mysqli_query($conn,"
-        INSERT INTO workshops(ic_no,title,attended_date)
-        VALUES('$ic_no','Hindi Workshop','$date2026')
-        ");
-    }
-
-    echo "<script>
-    alert('Attendance Updated Successfully');
-    window.location='update.php';
-    </script>";
-}
-
-/* ---------------- FETCH ---------------- */
-
-$query="
+$sql="
 
 SELECT
 
@@ -54,24 +19,26 @@ e.ic_no,
 e.name,
 e.designation,
 
-MAX(CASE WHEN YEAR(w.attended_date)=2025 THEN attended_date END) AS d2025,
-
-MAX(CASE WHEN YEAR(w.attended_date)=2026 THEN attended_date END) AS d2026
+w.id,
+w.workshop_name,
+w.workshop_year,
+w.attendance_status
 
 FROM employee e
 
-LEFT JOIN workshops w
-
+INNER JOIN workshops w
 ON e.ic_no=w.ic_no
 
-GROUP BY
-e.ic_no,e.name,e.designation
+LEFT JOIN roles r
+ON e.ic_no=r.ic_no
+
+WHERE r.role IS NULL
 
 ORDER BY e.ic_no
 
 ";
 
-$result=mysqli_query($conn,$query);
+$result=mysqli_query($conn,$sql);
 
 ?>
 
@@ -83,118 +50,210 @@ $result=mysqli_query($conn,$query);
 
 <meta charset="UTF-8">
 
-<title>Update Attendance</title>
+<title>Update Employees</title>
 
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/sidebar.css">
+<link rel="stylesheet" href="../css/navbar.css">
+<link rel="stylesheet" href="../css/dashboard.css">
 
-<style>
-
-.modal{
-display:none;
-position:fixed;
-left:0;
-top:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.5);
-}
-
-.modal-content{
-background:#fff;
-width:450px;
-margin:80px auto;
-padding:20px;
-border-radius:8px;
-}
-
-.close{
-float:right;
-font-size:24px;
-cursor:pointer;
-color:red;
-}
-
-</style>
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 </head>
 
 <body>
 
-<div class="navbar">
-
-<h2>हिंदी कार्यशाला पोर्टल</h2>
-
-<div>
-
-Welcome,
-
-<b><?php echo $_SESSION['name']; ?></b>
-
-</div>
-
-</div>
-
-<div class="sidebar">
-
-<a href="dashboard.php">Dashboard</a>
-
-<a href="view.php">View</a>
-
-<a href="update.php">Update</a>
-
-<a href="report.php">Get Report</a>
-
-<a href="../logout.php">Logout</a>
-
-</div>
+<?php include("../includes/sidebar.php"); ?>
+<?php include("../includes/navbar.php"); ?>
 
 <div class="content">
 
-<h2>Update Workshop Attendance</h2>
+<div class="glass-header">
 
-<br>
+<div>
 
-<table>
+<h2>
+
+<i class="fa-solid fa-user-pen"></i>
+
+Update Workshop Attendance
+
+</h2>
+
+<p>
+
+Select an employee to update workshop attendance.
+
+</p>
+
+</div>
+
+</div>
+
+<div class="glass-search">
+
+<i class="fa-solid fa-magnifying-glass"></i>
+
+<input
+
+type="text"
+
+id="searchBox"
+
+placeholder="Search IC No, Employee Name..."
+
+>
+
+</div>
+
+<div class="glass-table">
+
+<table id="employeeTable">
+
+<thead>
 
 <tr>
 
 <th>IC No</th>
 
-<th>Name</th>
+<th>Employee</th>
 
-<th>Designation</th>
+<th>Workshop</th>
 
-<th>Edit</th>
+<th>Year</th>
+
+<th>Status</th>
+
+<th>Action</th>
 
 </tr>
+
+</thead>
+
+<tbody>
 
 <?php
 
 while($row=mysqli_fetch_assoc($result))
+
 {
 
 ?>
 
 <tr>
 
-<td><?= $row['ic_no']; ?></td>
+<td>
 
-<td><?= $row['name']; ?></td>
+<b><?php echo $row['ic_no']; ?></b>
 
-<td><?= $row['designation']; ?></td>
+</td>
 
 <td>
 
-<button
-onclick="openModal(
-'<?= $row['ic_no']; ?>',
-'<?= addslashes($row['name']); ?>',
-'<?= addslashes($row['designation']); ?>',
-'<?= $row['d2025']; ?>',
-'<?= $row['d2026']; ?>'
-)">
-Edit
-</button>
+<div class="employee-info">
+
+<i class="fa-solid fa-user-circle"></i>
+
+<div>
+
+<strong>
+
+<?php echo $row['name']; ?>
+
+</strong>
+
+<br>
+
+<small>
+
+<?php echo $row['designation']; ?>
+
+</small>
+
+</div>
+
+</div>
+
+</td>
+
+<td>
+
+<?php echo $row['workshop_name']; ?>
+
+</td>
+
+<td>
+
+<?php echo $row['workshop_year']; ?>
+
+</td>
+
+<td>
+
+<?php
+
+if($row['attendance_status']=="Attended")
+{
+?>
+
+<span class="status-green">
+
+<i class="fa-solid fa-circle-check"></i>
+
+Attended
+
+</span>
+
+<?php
+}
+elseif($row['attendance_status']=="Pending")
+{
+?>
+
+<span class="status-orange">
+
+<i class="fa-solid fa-clock"></i>
+
+Pending
+
+</span>
+
+<?php
+}
+else
+{
+?>
+
+<span class="status-red">
+
+<i class="fa-solid fa-circle-xmark"></i>
+
+Absent
+
+</span>
+
+<?php
+}
+
+?>
+
+</td>
+
+<td>
+
+<a
+
+href="fetch_employee.php?id=<?php echo $row['id']; ?>"
+
+class="action-btn"
+
+>
+
+<i class="fa-solid fa-pen-to-square"></i>
+
+Update
+
+</a>
 
 </td>
 
@@ -206,104 +265,22 @@ Edit
 
 ?>
 
+</tbody>
+
 </table>
 
 </div>
 
-<!-- Modal -->
-
-<div id="editModal" class="modal">
-
-<div class="modal-content">
-
-<span class="close" onclick="closeModal()">&times;</span>
-
-<h2>Edit Attendance</h2>
-
-<form method="POST">
-
-<label>IC Number</label>
-
-<input
-type="text"
-name="ic_no"
-id="ic_no"
-readonly>
-
-<label>Name</label>
-
-<input
-type="text"
-id="name"
-readonly>
-
-<label>Designation</label>
-
-<input
-type="text"
-id="designation"
-readonly>
-
-<label>Workshop 2025</label>
-
-<input
-type="date"
-name="date2025"
-id="date2025">
-
-<label>Workshop 2026</label>
-
-<input
-type="date"
-name="date2026"
-id="date2026">
-
-<br><br>
-
-<button
-type="submit"
-name="save"
-class="btn btn-save">
-
-Save
-
-</button>
-
-</form>
-
 </div>
 
-</div>
-
-<script>
-
-function openModal(ic,name,desig,d2025,d2026)
-{
-document.getElementById("editModal").style.display="block";
-
-document.getElementById("ic_no").value=ic;
-document.getElementById("name").value=name;
-document.getElementById("designation").value=desig;
-
-document.getElementById("date2025").value=d2025;
-document.getElementById("date2026").value=d2026;
-}
-
-function closeModal()
-{
-document.getElementById("editModal").style.display="none";
-}
-
-window.onclick=function(e)
-{
-let modal=document.getElementById("editModal");
-
-if(e.target==modal)
-modal.style.display="none";
-}
-
-</script>
+<script src="../js/search.js"></script>
 
 </body>
 
 </html>
+
+<?php
+
+$conn->close();
+
+?>

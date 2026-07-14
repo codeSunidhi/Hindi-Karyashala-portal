@@ -2,63 +2,51 @@
 
 session_start();
 
-if(!isset($_SESSION['loggedin']))
+include("../config/db.php");
+include("../includes/auth.php");
+
+if($_SESSION['role']!="Karyashala Admin")
 {
     header("Location:../index.php");
     exit();
 }
 
-require_once("../config/db.php");
-
-$query = "
+$sql="
 
 SELECT
 
 e.ic_no,
 e.name,
+e.phone,
 e.designation,
 e.email,
 
-MAX(
-CASE
-WHEN YEAR(w.attended_date)=2025
-THEN '✔'
-ELSE ''
-END
-) AS workshop2025,
-
-MAX(
-CASE
-WHEN YEAR(w.attended_date)=2026
-THEN '✔'
-ELSE ''
-END
-) AS workshop2026
+w.id,
+w.workshop_year,
+w.workshop_name,
+w.attendance_status
 
 FROM employee e
 
-LEFT JOIN workshops w
-
+INNER JOIN workshops w
 ON e.ic_no=w.ic_no
 
-GROUP BY
+LEFT JOIN roles r
+ON e.ic_no=r.ic_no
 
-e.ic_no,
-e.name,
-e.designation,
-e.email
+WHERE r.role IS NULL
 
 ORDER BY e.ic_no
 
 ";
 
-$result=mysqli_query($conn,$query);
+$result=mysqli_query($conn,$sql);
 
 ?>
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
 
 <head>
 
@@ -66,87 +54,93 @@ $result=mysqli_query($conn,$query);
 
 <title>View Employees</title>
 
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/sidebar.css">
+<link rel="stylesheet" href="../css/navbar.css">
+<link rel="stylesheet" href="../css/dashboard.css">
 
-<script src="../js/validation.js"></script>
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 </head>
 
 <body>
 
-<div class="navbar">
+<?php include("../includes/sidebar.php"); ?>
 
-<h2>हिंदी कार्यशाला पोर्टल</h2>
-
-<div>
-
-Welcome,
-
-<b><?php echo $_SESSION['name']; ?></b>
-
-</div>
-
-</div>
-
-<div class="sidebar">
-
-<a href="dashboard.php">Dashboard</a>
-
-<a href="view.php">View</a>
-
-<a href="update.php">Update</a>
-
-<a href="report.php">Get Report</a>
-
-<a href="../logout.php">Logout</a>
-
-</div>
+<?php include("../includes/navbar.php"); ?>
 
 <div class="content">
 
-<h2>Employee Workshop Details</h2>
+<div class="glass-header">
 
-<br>
+    <div>
 
-<input
+        <h2>
 
-type="text"
+            <i class="fa-solid fa-users"></i>
 
-id="search"
+            Employee Records
 
-class="search-box"
+        </h2>
 
-placeholder="Search Employee..."
+        <p>
 
-onkeyup="searchTable();"
+            View workshop details of all employees.
 
->
+        </p>
 
-<br><br>
+    </div>
+
+</div>
+
+<div class="glass-search">
+
+    <i class="fa-solid fa-magnifying-glass"></i>
+
+    <input
+
+    type="text"
+
+    id="searchBox"
+
+    placeholder="Search IC No, Name, Designation..."
+
+    >
+
+</div>
+
+<div class="glass-table">
 
 <table id="employeeTable">
+
+<thead>
 
 <tr>
 
 <th>IC No</th>
 
-<th>Name</th>
+<th>Employee</th>
 
 <th>Designation</th>
 
-<th>Email</th>
+<th>Workshop</th>
 
-<th>2025</th>
+<th>Year</th>
 
-<th>2026</th>
+<th>Status</th>
 
 <th>Action</th>
 
 </tr>
 
+</thead>
+
+<tbody>
+
 <?php
 
 while($row=mysqli_fetch_assoc($result))
+
 {
 
 ?>
@@ -155,13 +149,35 @@ while($row=mysqli_fetch_assoc($result))
 
 <td>
 
-<?php echo $row['ic_no']; ?>
+<b><?php echo $row['ic_no']; ?></b>
 
 </td>
 
 <td>
 
+<div class="employee-info">
+
+<i class="fa-solid fa-user-circle"></i>
+
+<div>
+
+<strong>
+
 <?php echo $row['name']; ?>
+
+</strong>
+
+<br>
+
+<small>
+
+<?php echo $row['email']; ?>
+
+</small>
+
+</div>
+
+</div>
 
 </td>
 
@@ -173,19 +189,63 @@ while($row=mysqli_fetch_assoc($result))
 
 <td>
 
-<?php echo $row['email']; ?>
+<?php echo $row['workshop_name']; ?>
 
 </td>
 
-<td align="center">
+<td>
 
-<?php echo $row['workshop2025']; ?>
+<?php echo $row['workshop_year']; ?>
 
 </td>
 
-<td align="center">
+<td>
 
-<?php echo $row['workshop2026']; ?>
+<?php
+
+if($row['attendance_status']=="Attended")
+{
+?>
+
+<span class="status-green">
+
+<i class="fa-solid fa-circle-check"></i>
+
+Attended
+
+</span>
+
+<?php
+}
+elseif($row['attendance_status']=="Pending")
+{
+?>
+
+<span class="status-orange">
+
+<i class="fa-solid fa-clock"></i>
+
+Pending
+
+</span>
+
+<?php
+}
+else
+{
+?>
+
+<span class="status-red">
+
+<i class="fa-solid fa-circle-xmark"></i>
+
+Absent
+
+</span>
+
+<?php
+}
+?>
 
 </td>
 
@@ -193,11 +253,15 @@ while($row=mysqli_fetch_assoc($result))
 
 <a
 
-href="update.php?ic=<?php echo $row['ic_no']; ?>"
+href="fetch_employee.php?id=<?php echo $row['id']; ?>"
 
-class="btn btn-edit">
+class="action-btn"
 
-Edit
+>
+
+<i class="fa-solid fa-eye"></i>
+
+View
 
 </a>
 
@@ -211,9 +275,15 @@ Edit
 
 ?>
 
+</tbody>
+
 </table>
 
 </div>
+
+</div>
+
+<script src="../js/search.js"></script>
 
 </body>
 

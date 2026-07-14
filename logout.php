@@ -1,18 +1,60 @@
 <?php
+
 session_start();
 
-// Remove all session variables
-$_SESSION = array();
+include("config/db.php");
 
-// Destroy the session
+if(isset($_SESSION['loggedin']))
+{
+    $activity = $_SESSION['name']." logged out";
+
+    $sql = "
+
+    INSERT INTO activity_log
+
+    (
+
+    activity,
+
+    activity_by
+
+    )
+
+    VALUES
+
+    (
+
+    ?,
+
+    ?
+
+    )
+
+    ";
+
+    $stmt = $conn->prepare($sql);
+
+    $stmt->bind_param(
+
+    "si",
+
+    $activity,
+
+    $_SESSION['ic_no']
+
+    );
+
+    $stmt->execute();
+
+    $stmt->close();
+}
+
+session_unset();
+
 session_destroy();
 
-// Prevent browser caching
-header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
+header("Location:index.php");
 
-// Redirect to Login Page
-header("Location: index.php");
 exit();
+
 ?>

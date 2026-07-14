@@ -1,48 +1,128 @@
+<?php
+
+$currentPage = basename($_SERVER['PHP_SELF']);
+
+?>
+
 <div class="sidebar">
 
+    <div class="sidebar-logo">
+
+        <i class="fa-solid fa-book-open" style="font-size:55px;color:white;"></i>
+
+        <h2>Karyashala</h2>
+
+    </div>
+
+    <ul>
+
 <?php
 
-if($_SESSION['role']=="employee")
+if($_SESSION['role']=="Admin")
 {
 
 ?>
 
-<a href="dashboard.php">Dashboard</a>
+        <li>
 
-<a href="view.php">View</a>
+            <a href="dashboard.php"
+            class="<?php if($currentPage=="dashboard.php") echo "active"; ?>">
 
-<a href="update.php">Update</a>
+                <i class="fa-solid fa-house"></i>
 
-<a href="report.php">Get Report</a>
+                <span>Dashboard</span>
 
-<a href="../logout.php">Logout</a>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a href="reports.php"
+            class="<?php if($currentPage=="reports.php") echo "active"; ?>">
+
+                <i class="fa-solid fa-file-lines"></i>
+
+                <span>Reports</span>
+
+            </a>
+
+        </li>
+
+        <li>
+
+            <a href="history.php"
+            class="<?php if($currentPage=="history.php") echo "active"; ?>">
+
+                <i class="fa-solid fa-clock-rotate-left"></i>
+
+                <span>History</span>
+
+            </a>
+
+        </li>
 
 <?php
 
 }
+
 else
+
 {
 
 ?>
 
-<a href="dashboard.php">Dashboard</a>
+        <li>
 
-<a href="view.php">View</a>
+            <a href="dashboard.php"
+            class="<?php if($currentPage=="dashboard.php") echo "active"; ?>">
 
-<a href="update.php">Update</a>
+                <i class="fa-solid fa-house"></i>
 
-<a href="report.php">Get Report</a>
+                <span>Dashboard</span>
 
-<a href="approve.php">Approve Reports</a>
+            </a>
 
-<a href="history.php">Report History</a>
+        </li>
 
-<a href="../logout.php">Logout</a>
+        <li>
+
+            <a href="view.php"
+            class="<?php if($currentPage=="view.php") echo "active"; ?>">
+
+                <i class="fa-solid fa-users"></i>
+
+                <span>View Employees</span>
+
+            </a>
+
+        </li>
+
+        <li>
+
+            <a href="update.php"
+            class="<?php if($currentPage=="update.php") echo "active"; ?>">
+
+                <i class="fa-solid fa-user-pen"></i>
+
+                <span>Update</span>
+
+            </a>
+
+        </li>
 
 <?php
 
 }
 
 ?>
+
+    </ul>
+
+    <div class="sidebar-footer">
+
+        © 2026
+
+    </div>
 
 </div>

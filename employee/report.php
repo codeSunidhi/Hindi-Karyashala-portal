@@ -1,73 +1,72 @@
 <?php
+
 session_start();
 
-if (!isset($_SESSION['loggedin']) || $_SESSION['role'] != "karyashala") {
+include("../config/db.php");
+include("../includes/auth.php");
+
+if($_SESSION['role']!="Karyashala Admin")
+{
     header("Location:../index.php");
     exit();
 }
 
-require_once("../config/db.php");
+/* ==========================
+   FILTER
+========================== */
 
-if(isset($_POST['generate']))
+$year = "";
+
+if(isset($_GET['year']))
 {
+    $year = $_GET['year'];
+}
 
-$query="
+$sql = "
 
 SELECT
 
+w.id,
+
 e.ic_no,
+
 e.name,
+
 e.designation,
+
 e.email,
 
-MAX(CASE WHEN YEAR(w.attended_date)=2025 THEN attended_date END) AS workshop_2025,
+w.workshop_year,
 
-MAX(CASE WHEN YEAR(w.attended_date)=2026 THEN attended_date END) AS workshop_2026
+w.attended_date,
+
+w.attendance_status,
+
+w.remarks
 
 FROM employee e
 
-LEFT JOIN workshops w
+INNER JOIN workshops w
 
-ON e.ic_no=w.ic_no
+ON e.ic_no = w.ic_no
 
-GROUP BY
-e.ic_no,e.name,e.designation,e.email
+LEFT JOIN roles r
 
-ORDER BY e.ic_no
+ON e.ic_no = r.ic_no
+
+WHERE r.role IS NULL
 
 ";
 
-$result=mysqli_query($conn,$query);
-
-$data=array();
-
-while($row=mysqli_fetch_assoc($result))
+if($year!="")
 {
-    $data[]=$row;
+    $sql .= " AND w.workshop_year='$year'";
 }
 
-if(!is_dir("../reports"))
-{
-    mkdir("../reports");
-}
+$sql .= " ORDER BY e.ic_no";
 
-$filename="report_".date("Ymd_His").".json";
+$result=mysqli_query($conn,$sql);
 
-file_put_contents(
-"../reports/".$filename,
-json_encode($data,JSON_PRETTY_PRINT)
-);
-
-mysqli_query($conn,"
-INSERT INTO reports
-(report_name,generated_by,approved)
-VALUES
-('$filename','".$_SESSION['ic_no']."','No')
-");
-
-$msg="Report Generated Successfully.";
-
-}
 ?>
 
 <!DOCTYPE html>
@@ -80,54 +79,48 @@ $msg="Report Generated Successfully.";
 
 <title>Generate Report</title>
 
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/table.css">
+
+<link rel="stylesheet"
+
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 </head>
 
 <body>
 
-<div class="navbar">
+<?php include("../includes/navbar.php"); ?>
 
-<h2>हिंदी कार्यशाला पोर्टल</h2>
-
-<div>
-
-Welcome,
-
-<b><?php echo $_SESSION['name']; ?></b>
-
-</div>
-
-</div>
-
-<div class="sidebar">
-
-<a href="dashboard.php">Dashboard</a>
-
-<a href="view.php">View</a>
-
-<a href="update.php">Update</a>
-
-<a href="report.php">Get Report</a>
-
-<a href="../logout.php">Logout</a>
-
-</div>
+<?php include("../includes/sidebar.php"); ?>
 
 <div class="content">
 
-<h2>Generate Workshop Report</h2>
+<h2>
 
-<hr><br>
+<i class="fa-solid fa-file-lines"></i>
 
-<form method="POST">
+Workshop Report
 
-<button
-type="submit"
-name="generate"
-class="btn btn-report">
+</h2>
 
-Generate JSON Report
+<br>
+
+<form method="GET">
+
+<select name="year">
+
+<option value="">All Years</option>
+
+<option value="2025">2025</option>
+
+<option value="2026">2026</option>
+
+</select>
+
+<button class="btn-save">
+
+Filter
 
 </button>
 
@@ -135,65 +128,70 @@ Generate JSON Report
 
 <br>
 
-<?php
+<input
 
-if(isset($msg))
-{
+type="text"
 
-echo "<h3 style='color:green;'>$msg</h3>";
+id="searchBox"
 
-}
+class="search-box"
 
-?>
+placeholder="Search Employee">
 
-<br>
+<br><br>
 
-<h3>Generated Reports</h3>
+<table id="employeeTable">
 
-<br>
-
-<table>
+<thead>
 
 <tr>
 
-<th>Report Name</th>
+<th>IC No.</th>
+
+<th>Name</th>
+
+<th>Designation</th>
+
+<th>Email</th>
+
+<th>Workshop</th>
+
+<th>Date</th>
 
 <th>Status</th>
 
+<th>Remarks</th>
+
 </tr>
+
+</thead>
+
+<tbody>
 
 <?php
 
-$q=mysqli_query($conn,"
-SELECT *
-FROM reports
-ORDER BY id DESC
-");
-
-while($r=mysqli_fetch_assoc($q))
+while($row=mysqli_fetch_assoc($result))
 {
 
 ?>
 
 <tr>
 
-<td>
+<td><?= $row['ic_no']; ?></td>
 
-<a
-href="../reports/<?php echo $r['report_name']; ?>"
-target="_blank">
+<td><?= $row['name']; ?></td>
 
-<?php echo $r['report_name']; ?>
+<td><?= $row['designation']; ?></td>
 
-</a>
+<td><?= $row['email']; ?></td>
 
-</td>
+<td><?= $row['workshop_year']; ?></td>
 
-<td>
+<td><?= $row['attended_date']; ?></td>
 
-<?php echo $r['approved']; ?>
+<td><?= $row['attendance_status']; ?></td>
 
-</td>
+<td><?= $row['remarks']; ?></td>
 
 </tr>
 
@@ -203,9 +201,35 @@ target="_blank">
 
 ?>
 
+</tbody>
+
 </table>
 
+<br>
+
+<form action="generate_json.php" method="POST">
+
+<input
+
+type="hidden"
+
+name="year"
+
+value="<?php echo $year; ?>">
+
+<button class="btn-report">
+
+<i class="fa-solid fa-file-export"></i>
+
+Generate JSON Report
+
+</button>
+
+</form>
+
 </div>
+
+<script src="../js/search.js"></script>
 
 </body>
 
