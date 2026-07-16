@@ -5,13 +5,13 @@ session_start();
 include("../config/db.php");
 include("../includes/auth.php");
 
-if($_SESSION['role'] != "Karyashala Admin")
+if (!isset($_SESSION['role']) || $_SESSION['role'] != "Karyashala Admin")
 {
     header("Location:../index.php");
     exit();
 }
 
-if($_SERVER["REQUEST_METHOD"] != "POST")
+if ($_SERVER["REQUEST_METHOD"] != "POST")
 {
     header("Location:update.php");
     exit();
@@ -23,13 +23,7 @@ if($_SERVER["REQUEST_METHOD"] != "POST")
 
 $id = intval($_POST['id']);
 
-$phone = trim($_POST['phone']);
-
-$designation = trim($_POST['designation']);
-
-$email = trim($_POST['email']);
-
-$attended_date = $_POST['attended_date'];
+$attended_date = empty($_POST['attended_date']) ? NULL : $_POST['attended_date'];
 
 $attendance_status = $_POST['attendance_status'];
 
@@ -41,81 +35,10 @@ $updated_by = $_SESSION['ic_no'];
    VALIDATE DATE
 ========================== */
 
-if(!empty($attended_date))
+if (!empty($attended_date) && $attended_date > date("Y-m-d"))
 {
-    if($attended_date > date("Y-m-d"))
-    {
-        echo "<script>
-
-        alert('Attendance date cannot be greater than today.');
-
-        history.back();
-
-        </script>";
-
-        exit();
-    }
+    die("Attendance date cannot be greater than today.");
 }
-
-/* ==========================
-   GET EMPLOYEE IC
-========================== */
-
-$sql = "SELECT ic_no FROM workshops WHERE id=?";
-
-$stmt = $conn->prepare($sql);
-
-$stmt->bind_param("i",$id);
-
-$stmt->execute();
-
-$result = $stmt->get_result();
-
-$row = $result->fetch_assoc();
-
-$employee_ic = $row['ic_no'];
-
-$stmt->close();
-
-/* ==========================
-   UPDATE EMPLOYEE
-========================== */
-
-$sql = "
-
-UPDATE employee
-
-SET
-
-phone=?,
-
-designation=?,
-
-email=?
-
-WHERE ic_no=?
-
-";
-
-$stmt = $conn->prepare($sql);
-
-$stmt->bind_param(
-
-"sssi",
-
-$phone,
-
-$designation,
-
-$email,
-
-$employee_ic
-
-);
-
-$stmt->execute();
-
-$stmt->close();
 
 /* ==========================
    UPDATE WORKSHOP
@@ -157,7 +80,10 @@ $id
 
 );
 
-$stmt->execute();
+if(!$stmt->execute())
+{
+    die("Update Failed : ".$stmt->error);
+}
 
 $stmt->close();
 
@@ -165,43 +91,23 @@ $stmt->close();
    ACTIVITY LOG
 ========================== */
 
-$activity = $_SESSION['name']." updated employee IC ".$employee_ic;
+$activity = "Workshop attendance updated";
 
 $sql = "
 
 INSERT INTO activity_log
 
-(
-
-activity,
-
-activity_by
-
-)
+(activity,activity_by)
 
 VALUES
 
-(
-
-?,
-
-?
-
-)
+(?,?)
 
 ";
 
 $stmt = $conn->prepare($sql);
 
-$stmt->bind_param(
-
-"si",
-
-$activity,
-
-$updated_by
-
-);
+$stmt->bind_param("si",$activity,$updated_by);
 
 $stmt->execute();
 
@@ -240,13 +146,13 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <h2>
 
-Employee Updated Successfully
+Workshop Updated Successfully
 
 </h2>
 
 <p>
 
-All changes have been saved.
+Attendance details have been updated successfully.
 
 </p>
 
@@ -254,7 +160,7 @@ All changes have been saved.
 
 <a
 
-href="update_save.php?id=<?php echo $id; ?>"
+href="generate_json.php?id=<?php echo $id; ?>"
 
 class="btn-report">
 

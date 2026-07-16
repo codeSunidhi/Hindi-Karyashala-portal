@@ -5,7 +5,7 @@ session_start();
 include("../config/db.php");
 include("../includes/auth.php");
 
-if($_SESSION['role']!="Karyashala Admin")
+if(!isset($_SESSION['role']) || $_SESSION['role']!="Karyashala Admin")
 {
     header("Location:../index.php");
     exit();
@@ -13,15 +13,17 @@ if($_SESSION['role']!="Karyashala Admin")
 
 if(!isset($_GET['id']))
 {
-    header("Location:view.php");
+    header("Location:update.php");
     exit();
 }
 
-$id=intval($_GET['id']);
+$id = intval($_GET['id']);
 
-$sql="
+$sql = "
 
 SELECT
+
+w.id,
 
 e.ic_no,
 e.name,
@@ -38,36 +40,39 @@ w.remarks
 FROM employee e
 
 INNER JOIN workshops w
+
 ON e.ic_no=w.ic_no
 
 WHERE w.id=?
 
 ";
 
-$stmt=$conn->prepare($sql);
+$stmt = $conn->prepare($sql);
+
 $stmt->bind_param("i",$id);
+
 $stmt->execute();
 
-$result=$stmt->get_result();
+$result = $stmt->get_result();
 
 if($result->num_rows==0)
 {
     die("Employee not found.");
 }
 
-$row=$result->fetch_assoc();
+$row = $result->fetch_assoc();
 
 ?>
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
 
 <head>
 
 <meta charset="UTF-8">
 
-<title>Employee Details</title>
+<title>Update Employee</title>
 
 <link rel="stylesheet" href="../css/sidebar.css">
 <link rel="stylesheet" href="../css/navbar.css">
@@ -91,15 +96,15 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <h2>
 
-<i class="fa-solid fa-id-card"></i>
+<i class="fa-solid fa-user-pen"></i>
 
-Employee Details
+Update Workshop Attendance
 
 </h2>
 
 <p>
 
-Complete workshop information of the selected employee.
+Modify workshop attendance details for the selected employee.
 
 </p>
 
@@ -107,154 +112,226 @@ Complete workshop information of the selected employee.
 
 </div>
 
-<div class="dashboard-middle">
+<div class="form-card">
 
-<!-- Employee Card -->
+<form action="save_employee.php" method="POST">
 
-<div class="activity-box">
+<input type="hidden" name="id" value="<?php echo $row['id']; ?>">
 
-<h3>
+<div class="form-grid">
 
-<i class="fa-solid fa-user"></i>
+<div class="form-group">
 
-Employee Information
+<label>IC Number</label>
 
-</h3>
-
-<table class="activity-table">
-
-<tr>
-<td><strong>IC Number</strong></td>
-<td><?php echo $row['ic_no']; ?></td>
-</tr>
-
-<tr>
-<td><strong>Name</strong></td>
-<td><?php echo $row['name']; ?></td>
-</tr>
-
-<tr>
-<td><strong>Designation</strong></td>
-<td><?php echo $row['designation']; ?></td>
-</tr>
-
-<tr>
-<td><strong>Phone</strong></td>
-<td><?php echo $row['phone']; ?></td>
-</tr>
-
-<tr>
-<td><strong>Email</strong></td>
-<td><?php echo $row['email']; ?></td>
-</tr>
-
-</table>
+<input
+type="text"
+value="<?php echo $row['ic_no']; ?>"
+readonly>
 
 </div>
 
-<!-- Workshop Card -->
+<div class="form-group">
 
-<div class="activity-box">
+<label>Employee Name</label>
 
-<h3>
+<input
+type="text"
+value="<?php echo $row['name']; ?>"
+readonly>
 
-<i class="fa-solid fa-book-open"></i>
+</div>
 
-Workshop Information
+<div class="form-group">
 
-</h3>
+<label>Phone Number</label>
 
-<table class="activity-table">
+<input
+type="text"
+value="<?php echo $row['phone']; ?>"
+readonly>
 
-<tr>
-<td><strong>Workshop</strong></td>
-<td><?php echo $row['workshop_name']; ?></td>
-</tr>
+</div>
 
-<tr>
-<td><strong>Year</strong></td>
-<td><?php echo $row['workshop_year']; ?></td>
-</tr>
+<div class="form-group">
 
-<tr>
-<td><strong>Attended Date</strong></td>
-<td>
+<label>Designation</label>
 
-<?php
+<input
+type="text"
+value="<?php echo $row['designation']; ?>"
+readonly>
 
-if(empty($row['attended_date']))
-{
-    echo "<span class='status-orange'>Not Updated</span>";
-}
-else
-{
-    echo $row['attended_date'];
-}
+</div>
 
-?>
+<div class="form-group full-width">
 
-</td>
-</tr>
+<label>Email Address</label>
 
-<tr>
-<td><strong>Status</strong></td>
-<td>
+<input
+type="email"
+value="<?php echo $row['email']; ?>"
+readonly>
 
-<?php
+</div>
 
-if($row['attendance_status']=="Attended")
-{
-    echo "<span class='status-green'><i class='fa-solid fa-circle-check'></i> Attended</span>";
-}
-elseif($row['attendance_status']=="Pending")
-{
-    echo "<span class='status-orange'><i class='fa-solid fa-clock'></i> Pending</span>";
-}
-else
-{
-    echo "<span class='status-red'><i class='fa-solid fa-circle-xmark'></i> Absent</span>";
-}
+<div class="form-group">
 
-?>
+<label>Workshop</label>
 
-</td>
-</tr>
+<input
+type="text"
+value="<?php echo $row['workshop_name']; ?>"
+readonly>
 
-<tr>
-<td><strong>Remarks</strong></td>
-<td>
+</div>
 
-<?php
+<div class="form-group">
 
-if(trim($row['remarks'])=="")
-{
-    echo "-";
-}
-else
-{
-    echo nl2br(htmlspecialchars($row['remarks']));
-}
+<label>Workshop Year</label>
 
-?>
+<input
+type="text"
+value="<?php echo $row['workshop_year']; ?>"
+readonly>
 
-</td>
-</tr>
+</div>
 
-</table>
+<div class="form-group">
+
+<label>Attendance Date</label>
+
+<input
+
+type="date"
+
+name="attended_date"
+
+value="<?php echo $row['attended_date']; ?>"
+
+max="<?php echo date('Y-m-d'); ?>">
+
+</div>
+
+<div class="form-group">
+
+<label>Attendance Status</label>
+
+<select name="attendance_status">
+
+<option value="Pending"
+<?php if($row['attendance_status']=="Pending") echo "selected"; ?>>
+
+Pending
+
+</option>
+
+<option value="Attended"
+<?php if($row['attendance_status']=="Attended") echo "selected"; ?>>
+
+Attended
+
+</option>
+
+<option value="Absent"
+<?php if($row['attendance_status']=="Absent") echo "selected"; ?>>
+
+Absent
+
+</option>
+
+</select>
+
+</div>
+
+<div class="form-group full-width">
+
+<label>Remarks</label>
+
+<textarea
+
+name="remarks"
+
+rows="5"
+
+placeholder="Enter remarks..."><?php echo htmlspecialchars($row['remarks']); ?></textarea>
 
 </div>
 
 </div>
 
-<br>
+<div class="button-group">
 
-<a href="view.php" class="action-btn">
+<button
+type="submit"
+class="btn-save">
+
+<i class="fa-solid fa-floppy-disk"></i>
+
+Save Changes
+
+</button>
+
+<a
+
+href="generate_json.php?id=<?php echo $row['id']; ?>"
+
+class="btn-report">
+
+<i class="fa-solid fa-file-code"></i>
+
+Generate JSON Report
+
+</a>
+
+<a
+
+href="update.php"
+
+class="btn-back">
 
 <i class="fa-solid fa-arrow-left"></i>
 
-Back to Employees
+Back
 
 </a>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+
+<a
+href="generate_json.php?id=<?php echo $row['id']; ?>"
+class="action-btn"
+style="background:#16a34a;">
+
+<i class="fa-solid fa-file-code"></i>
+
+Generate JSON Report
+
+</a>
+
+<a
+href="update.php"
+class="action-btn"
+style="background:#6b7280;">
+
+<i class="fa-solid fa-arrow-left"></i>
+
+Back
+
+</a>
+
+</div>
+
+</form>
+
+</div>
 
 </div>
 
@@ -265,6 +342,7 @@ Back to Employees
 <?php
 
 $stmt->close();
+
 $conn->close();
 
 ?>
