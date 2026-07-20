@@ -5,14 +5,17 @@ session_start();
 include("../config/db.php");
 include("../includes/auth.php");
 
-if($_SESSION['role']!="Admin")
+if(
+    !isset($_SESSION['role']) ||
+    $_SESSION['role']!="Admin"
+)
 {
     header("Location:../index.php");
     exit();
 }
 
 /* ===========================
-   COUNTS
+   REPORT COUNTS
 =========================== */
 
 $pending = mysqli_fetch_assoc(mysqli_query($conn,"
@@ -32,6 +35,32 @@ SELECT COUNT(*) total
 FROM employee
 "));
 
+/* ===========================
+   ATTENDANCE COUNTS
+=========================== */
+
+$attended = mysqli_fetch_assoc(mysqli_query($conn,"
+SELECT COUNT(*) total
+FROM workshops
+WHERE attendance_status='Attended'
+"));
+
+$pendingAttendance = mysqli_fetch_assoc(mysqli_query($conn,"
+SELECT COUNT(*) total
+FROM workshops
+WHERE attendance_status='Pending'
+"));
+
+$absent = mysqli_fetch_assoc(mysqli_query($conn,"
+SELECT COUNT(*) total
+FROM workshops
+WHERE attendance_status='Absent'
+"));
+
+/* ===========================
+   RECENT ACTIVITY
+=========================== */
+
 $activities = mysqli_query($conn,"
 SELECT activity,activity_date
 FROM activity_log
@@ -43,13 +72,13 @@ LIMIT 5
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
 
 <head>
 
 <meta charset="UTF-8">
 
-<title>Admin Dashboard</title>
+<title>Administrator Dashboard</title>
 
 <link rel="stylesheet" href="../css/sidebar.css">
 <link rel="stylesheet" href="../css/navbar.css">
@@ -65,10 +94,13 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 <body>
 
 <?php include("../includes/sidebar.php"); ?>
-
 <?php include("../includes/navbar.php"); ?>
 
 <div class="content">
+
+<div class="glass-header">
+
+<div>
 
 <h2>
 
@@ -85,6 +117,10 @@ Welcome,
 <b><?php echo $_SESSION['name']; ?></b>
 
 </p>
+
+</div>
+
+</div>
 
 <!-- DASHBOARD CARDS -->
 
@@ -132,9 +168,33 @@ Welcome,
 
 </div>
 
-<!-- QUICK ACTION -->
+<!-- QUICK ACTIONS -->
 
 <div class="quick-actions">
+
+<a href="../employee/view.php" class="action-btn">
+
+<i class="fa-solid fa-users"></i>
+
+View Employees
+
+</a>
+
+<a href="../employee/update.php" class="action-btn">
+
+<i class="fa-solid fa-user-pen"></i>
+
+Update Employees
+
+</a>
+
+<a href="add_employee.php" class="action-btn">
+
+<i class="fa-solid fa-user-plus"></i>
+
+Add Employee
+
+</a>
 
 <a href="reports.php" class="action-btn">
 
@@ -156,66 +216,60 @@ History
 
 <br>
 
-<!-- CONTENT -->
 <div class="dashboard-middle">
 
-    <div class="activity-box">
+<div class="activity-box">
 
-        <h3>
+<h3>
 
-        <i class="fa-solid fa-clock-rotate-left"></i>
+<i class="fa-solid fa-clock-rotate-left"></i>
 
-        Recent Activities
+Recent Activities
 
-        </h3>
+</h3>
 
-        <table class="activity-table">
+<table class="activity-table">
 
-        <tr>
+<tr>
 
-            <th>Activity</th>
+<th>Activity</th>
 
-            <th>Date</th>
+<th>Date</th>
 
-        </tr>
+</tr>
 
-        <?php
+<?php
 
-        while($row=mysqli_fetch_assoc($activities))
+while($row=mysqli_fetch_assoc($activities))
+{
 
-        {
+?>
 
-        ?>
+<tr>
 
-        <tr>
+<td><?php echo htmlspecialchars($row['activity']); ?></td>
 
-            <td><?php echo $row['activity']; ?></td>
+<td><?php echo date("d M Y H:i",strtotime($row['activity_date'])); ?></td>
 
-            <td><?php echo date("d M Y H:i",strtotime($row['activity_date'])); ?></td>
+</tr>
 
-        </tr>
+<?php
 
-        <?php
+}
 
-        }
+?>
 
-        ?>
+</table>
 
-        </table>
+</div>
 
-    </div>
+<div class="chart-box">
 
-    <div class="chart-box">
+<h3>Workshop Attendance</h3>
 
-        <h3>
+<canvas id="attendanceChart"></canvas>
 
-        Workshop Attendance
-
-        </h3>
-
-        <canvas id="attendanceChart"></canvas>
-
-    </div>
+</div>
 
 </div>
 
@@ -223,43 +277,19 @@ History
 
 <div class="dashboard-middle">
 
-    <div class="chart-box">
+<div class="chart-box">
 
-        <h3>
+<h3>Report Status</h3>
 
-        Report Status
-
-        </h3>
-
-        <canvas id="reportChart"></canvas>
-
-    </div>
-
-    <div class="chart-box">
-
-        <h3>
-
-        Workshop Attendance Count
-
-        </h3>
-
-        <canvas id="barChart"></canvas>
-
-    </div>
+<canvas id="reportChart"></canvas>
 
 </div>
 
 <div class="chart-box">
 
-<h3>
+<h3>Workshop Attendance Count</h3>
 
-Report Status
-
-</h3>
-
-<canvas id="reportChart"></canvas>
-
-</div>
+<canvas id="barChart"></canvas>
 
 </div>
 

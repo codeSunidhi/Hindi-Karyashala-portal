@@ -5,6 +5,7 @@ session_start();
 include("../config/db.php");
 include("../includes/auth.php");
 
+
 if(
     !isset($_SESSION['role']) ||
     $_SESSION['role']!="Admin"
@@ -13,28 +14,27 @@ if(
     header("Location:../index.php");
     exit();
 }
-
-$sql="
+$sql = "
 
 SELECT
 
-r.id,
-r.report_name,
-r.report_year,
-r.generated_date,
-r.status,
-
 e.ic_no,
-e.name
+e.name,
+e.phone,
+e.designation,
+e.email,
 
-FROM reports r
+w.id,
+w.workshop_year,
+w.workshop_name,
+w.attendance_status
 
-INNER JOIN employee e
-ON r.employee_ic=e.ic_no
+FROM employee e
 
-WHERE r.status='Pending'
+INNER JOIN workshops w
+ON e.ic_no = w.ic_no
 
-ORDER BY r.generated_date DESC
+ORDER BY e.ic_no
 
 ";
 
@@ -50,7 +50,7 @@ $result=mysqli_query($conn,$sql);
 
 <meta charset="UTF-8">
 
-<title>Pending Reports</title>
+<title>View Employees</title>
 
 <link rel="stylesheet" href="../css/sidebar.css">
 <link rel="stylesheet" href="../css/navbar.css">
@@ -64,40 +64,46 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 <body>
 
 <?php include("../includes/sidebar.php"); ?>
+
 <?php include("../includes/navbar.php"); ?>
 
 <div class="content">
 
 <div class="glass-header">
 
-<div>
+    <div>
 
-<h2>
+        <h2>
 
-<i class="fa-solid fa-file-circle-check"></i>
+            <i class="fa-solid fa-users"></i>
 
-Pending Reports
+            Employee Records
 
-</h2>
+        </h2>
 
-<p>
+        <p>
 
-Review employee workshop reports before verification.
+            View workshop details of all employees.
 
-</p>
+        </p>
 
-</div>
+    </div>
 
 </div>
 
 <div class="glass-search">
 
-<i class="fa-solid fa-magnifying-glass"></i>
+    <i class="fa-solid fa-magnifying-glass"></i>
 
-<input
-type="text"
-id="searchBox"
-placeholder="Search employee name, IC number or report...">
+    <input
+
+    type="text"
+
+    id="searchBox"
+
+    placeholder="Search IC No, Name, Designation..."
+
+    >
 
 </div>
 
@@ -113,11 +119,11 @@ placeholder="Search employee name, IC number or report...">
 
 <th>Employee</th>
 
-<th>Report</th>
+<th>Designation</th>
+
+<th>Workshop</th>
 
 <th>Year</th>
-
-<th>Generated</th>
 
 <th>Status</th>
 
@@ -129,7 +135,13 @@ placeholder="Search employee name, IC number or report...">
 
 <tbody>
 
-<?php while($row=mysqli_fetch_assoc($result)){ ?>
+<?php
+
+while($row=mysqli_fetch_assoc($result))
+
+{
+
+?>
 
 <tr>
 
@@ -153,31 +165,59 @@ placeholder="Search employee name, IC number or report...">
 
 </strong>
 
-</div>
+<br>
+
+<small>
+
+<?php echo $row['email']; ?>
+
+</small>
 
 </div>
 
-</td>
-
-<td>
-
-<?php echo $row['report_name']; ?>
+</div>
 
 </td>
 
 <td>
 
-<?php echo $row['report_year']; ?>
+<?php echo $row['designation']; ?>
 
 </td>
 
 <td>
 
-<?php echo date("d M Y",strtotime($row['generated_date'])); ?>
+<?php echo $row['workshop_name']; ?>
 
 </td>
 
 <td>
+
+<?php echo $row['workshop_year']; ?>
+
+</td>
+
+<td>
+
+<?php
+
+if($row['attendance_status']=="Attended")
+{
+?>
+
+<span class="status-green">
+
+<i class="fa-solid fa-circle-check"></i>
+
+Attended
+
+</span>
+
+<?php
+}
+elseif($row['attendance_status']=="Pending")
+{
+?>
 
 <span class="status-orange">
 
@@ -187,17 +227,39 @@ Pending
 
 </span>
 
+<?php
+}
+else
+{
+?>
+
+<span class="status-red">
+
+<i class="fa-solid fa-circle-xmark"></i>
+
+Absent
+
+</span>
+
+<?php
+}
+?>
+
 </td>
 
 <td>
 
 <a
-href="report_details.php?id=<?php echo $row['id']; ?>"
-class="action-btn">
+
+href="fetch_employee.php?id=<?php echo $row['id']; ?>"
+
+class="action-btn"
+
+>
 
 <i class="fa-solid fa-eye"></i>
 
-View Details
+View
 
 </a>
 
@@ -205,7 +267,11 @@ View Details
 
 </tr>
 
-<?php } ?>
+<?php
+
+}
+
+?>
 
 </tbody>
 
@@ -220,9 +286,3 @@ View Details
 </body>
 
 </html>
-
-<?php
-
-$conn->close();
-
-?>

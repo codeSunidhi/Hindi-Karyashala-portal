@@ -5,7 +5,10 @@ session_start();
 include("../config/db.php");
 include("../includes/auth.php");
 
-if($_SESSION['role']!="Admin")
+if(
+    !isset($_SESSION['role']) ||
+    $_SESSION['role']!="Admin"
+)
 {
     header("Location:../index.php");
     exit();
@@ -19,9 +22,7 @@ if(!isset($_GET['id']))
 
 $id = intval($_GET['id']);
 
-/* ===========================================
-   GET REPORT DETAILS
-=========================================== */
+/* Get Report */
 
 $sql="
 
@@ -29,13 +30,11 @@ SELECT
 
 r.id,
 r.report_name,
-r.employee_ic,
 e.name
 
 FROM reports r
 
 INNER JOIN employee e
-
 ON r.employee_ic=e.ic_no
 
 WHERE r.id=?
@@ -57,9 +56,7 @@ $row=$result->fetch_assoc();
 
 $stmt->close();
 
-/* ===========================================
-   VERIFY REPORT
-=========================================== */
+/* Verify Report */
 
 $sql="
 
@@ -93,27 +90,19 @@ $stmt->execute();
 
 $stmt->close();
 
-/* ===========================================
-   ACTIVITY LOG
-=========================================== */
+/* Activity Log */
 
 $activity="Admin verified report of ".$row['name'];
 
-$stmt=$conn->prepare(
-
-"
+$stmt=$conn->prepare("
 
 INSERT INTO activity_log
 
 (activity,activity_by)
 
-VALUES
+VALUES (?,?)
 
-(?,?)
-
-"
-
-);
+");
 
 $stmt->bind_param(
 
@@ -129,100 +118,12 @@ $stmt->execute();
 
 $stmt->close();
 
-?>
-
-<!DOCTYPE html>
-
-<html>
-
-<head>
-
-<meta charset="UTF-8">
-
-<title>Report Verified</title>
-
-<link rel="stylesheet" href="../css/sidebar.css">
-<link rel="stylesheet" href="../css/navbar.css">
-<link rel="stylesheet" href="../css/dashboard.css">
-
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-</head>
-
-<body>
-
-<?php include("../includes/sidebar.php"); ?>
-
-<?php include("../includes/navbar.php"); ?>
-
-<div class="content">
-
-<div class="activity-box" style="text-align:center; max-width:700px; margin:auto;">
-
-<i class="fa-solid fa-circle-check"
-style="font-size:80px;color:#22c55e;margin-bottom:20px;"></i>
-
-<h2 style="color:white;">
-
-Report Verified Successfully
-
-</h2>
-
-<br>
-
-<p style="font-size:18px;color:white;">
-
-Employee
-
-<br><br>
-
-<b>
-
-<?php echo $row['name']; ?>
-
-</b>
-
-</p>
-
-<br>
-
-<p style="color:#e5e7eb;">
-
-Report :
-
-<b>
-
-<?php echo $row['report_name']; ?>
-
-</b>
-
-</p>
-
-<br><br>
-
-<a
-
-href="reports.php"
-
-class="action-btn"
-
->
-
-Back to Pending Reports
-
-</a>
-
-</div>
-
-</div>
-
-</body>
-
-</html>
-
-<?php
-
 $conn->close();
+
+/* Redirect */
+
+header("Location:reports.php?verified=1");
+
+exit();
 
 ?>

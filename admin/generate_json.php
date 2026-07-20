@@ -5,7 +5,10 @@ session_start();
 include("../config/db.php");
 include("../includes/auth.php");
 
-if($_SESSION['role'] != "Karyashala Admin")
+if(
+    !isset($_SESSION['role']) ||
+    $_SESSION['role']!="Admin"
+)
 {
     header("Location:../index.php");
     exit();
