@@ -1,60 +1,33 @@
 <?php
+include "../includes/auth.php";
+include "../config/db.php";
 
-session_start();
+$reportSql="SELECT
+reports.report_id,
+reports.report_name,
+reports.employee_ic,
+employees.name,
+employees.designation,
+reports.workshop_year,
+reports.generated_date,
+reports.status
+FROM reports
+INNER JOIN employees
+ON reports.employee_ic=employees.ic_number
+WHERE reports.status='Pending'
+ORDER BY reports.generated_date DESC";
 
-include("../config/db.php");
-include("../includes/auth.php");
-
-if(
-    !isset($_SESSION['role']) ||
-    $_SESSION['role']!="Admin"
-)
-{
-    header("Location:../index.php");
-    exit();
-}
-
-$sql="
-
-SELECT
-
-r.id,
-r.report_name,
-r.report_year,
-r.generated_date,
-r.status,
-
-e.ic_no,
-e.name
-
-FROM reports r
-
-INNER JOIN employee e
-ON r.employee_ic=e.ic_no
-
-WHERE r.status='Pending'
-
-ORDER BY r.generated_date DESC
-
-";
-
-$result=mysqli_query($conn,$sql);
-
+$reportResult=$conn->query($reportSql);
 ?>
 
 <!DOCTYPE html>
-
-<html lang="en">
-
+<html>
 <head>
-
-<meta charset="UTF-8">
 
 <title>Pending Reports</title>
 
-<link rel="stylesheet" href="../css/sidebar.css">
-<link rel="stylesheet" href="../css/navbar.css">
-<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/table.css">
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -63,45 +36,43 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <body>
 
-<?php include("../includes/sidebar.php"); ?>
-<?php include("../includes/navbar.php"); ?>
+<div class="overlay">
 
-<div class="content">
+<?php
+include "../includes/navbar.php";
+include "../includes/sidebar.php";
+?>
 
-<div class="glass-header">
+<div class="main">
 
-<div>
+<div class="page-header">
+<h1>Pending Reports</h1>
+<p>Reports awaiting verification.</p>
+</div>
 
-<h2>
-
-<i class="fa-solid fa-file-circle-check"></i>
-
-Pending Reports
-
-</h2>
-
-<p>
-
-Review employee workshop reports before verification.
-
+<?php
+if(isset($_SESSION["message"])){
+?>
+<p class="success-message">
+<?php
+echo $_SESSION["message"];
+unset($_SESSION["message"]);
+?>
 </p>
+<?php
+}
+?>
 
-</div>
+<div class="table-card">
 
-</div>
-
-<div class="glass-search">
-
-<i class="fa-solid fa-magnifying-glass"></i>
+<div class="table-top">
 
 <input
 type="text"
-id="searchBox"
-placeholder="Search employee name, IC number or report...">
+id="search"
+placeholder="Search by IC, Name or Year">
 
 </div>
-
-<div class="glass-table">
 
 <table id="employeeTable">
 
@@ -109,15 +80,17 @@ placeholder="Search employee name, IC number or report...">
 
 <tr>
 
-<th>IC No</th>
+<th>Report ID</th>
 
-<th>Employee</th>
+<th>Employee IC</th>
 
-<th>Report</th>
+<th>Employee Name</th>
 
-<th>Year</th>
+<th>Designation</th>
 
-<th>Generated</th>
+<th>Workshop Year</th>
+
+<th>Generated Date</th>
 
 <th>Status</th>
 
@@ -129,61 +102,27 @@ placeholder="Search employee name, IC number or report...">
 
 <tbody>
 
-<?php while($row=mysqli_fetch_assoc($result)){ ?>
+<?php while($report=$reportResult->fetch_assoc()){ ?>
 
 <tr>
 
-<td>
+<td><?php echo htmlspecialchars($report["report_id"]); ?></td>
 
-<b><?php echo $row['ic_no']; ?></b>
+<td><?php echo htmlspecialchars($report["employee_ic"]); ?></td>
 
-</td>
+<td><?php echo htmlspecialchars($report["name"]); ?></td>
 
-<td>
+<td><?php echo htmlspecialchars($report["designation"]); ?></td>
 
-<div class="employee-info">
+<td><?php echo htmlspecialchars($report["workshop_year"]); ?></td>
 
-<i class="fa-solid fa-user-circle"></i>
-
-<div>
-
-<strong>
-
-<?php echo $row['name']; ?>
-
-</strong>
-
-</div>
-
-</div>
-
-</td>
+<td><?php echo date("d-m-Y",strtotime($report["generated_date"])); ?></td>
 
 <td>
 
-<?php echo $row['report_name']; ?>
+<span class="badge pending">
 
-</td>
-
-<td>
-
-<?php echo $row['report_year']; ?>
-
-</td>
-
-<td>
-
-<?php echo date("d M Y",strtotime($row['generated_date'])); ?>
-
-</td>
-
-<td>
-
-<span class="status-orange">
-
-<i class="fa-solid fa-clock"></i>
-
-Pending
+<?php echo htmlspecialchars($report["status"]); ?>
 
 </span>
 
@@ -191,15 +130,16 @@ Pending
 
 <td>
 
-<a
-href="report_details.php?id=<?php echo $row['id']; ?>"
-class="action-btn">
+<button
+type="button"
+class="report-btn viewBtn"
+data-id="<?php echo $report["report_id"]; ?>">
 
 <i class="fa-solid fa-eye"></i>
 
-View Details
+View
 
-</a>
+</button>
 
 </td>
 
@@ -215,14 +155,22 @@ View Details
 
 </div>
 
+<div id="reportModal" class="modal">
+
+<div class="modal-content">
+
+<span class="close">&times;</span>
+
+<div id="reportContent"></div>
+
+</div>
+
+</div>
+
+</div>
+
 <script src="../js/search.js"></script>
+<script src="../js/modal.js"></script>
 
 </body>
-
 </html>
-
-<?php
-
-$conn->close();
-
-?>

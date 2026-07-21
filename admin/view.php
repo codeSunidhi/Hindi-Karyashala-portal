@@ -1,113 +1,78 @@
 <?php
+include "../includes/auth.php";
+include "../config/db.php";
 
-session_start();
+$employeeSql="SELECT
+employees.ic_number,
+employees.name,
+employees.phone,
+employees.designation,
+employees.email,
+workshops.workshop_name,
+workshops.workshop_year,
+workshops.attendance_date,
+workshops.attendance_status
+FROM employees
+LEFT JOIN workshops
+ON employees.ic_number=workshops.employee_ic
+WHERE employees.ic_number NOT IN(1001,1002)
+ORDER BY employees.ic_number";
 
-include("../config/db.php");
-include("../includes/auth.php");
-
-
-if(
-    !isset($_SESSION['role']) ||
-    $_SESSION['role']!="Admin"
-)
-{
-    header("Location:../index.php");
-    exit();
-}
-$sql = "
-
-SELECT
-
-e.ic_no,
-e.name,
-e.phone,
-e.designation,
-e.email,
-
-w.id,
-w.workshop_year,
-w.workshop_name,
-w.attendance_status
-
-FROM employee e
-
-INNER JOIN workshops w
-ON e.ic_no = w.ic_no
-
-ORDER BY e.ic_no
-
-";
-
-$result=mysqli_query($conn,$sql);
-
+$employeeResult=$conn->query($employeeSql);
 ?>
 
 <!DOCTYPE html>
-
-<html lang="en">
-
+<html>
 <head>
-
-<meta charset="UTF-8">
 
 <title>View Employees</title>
 
-<link rel="stylesheet" href="../css/sidebar.css">
-<link rel="stylesheet" href="../css/navbar.css">
-<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/table.css">
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 </head>
-
 <body>
 
-<?php include("../includes/sidebar.php"); ?>
+<div class="overlay">
 
-<?php include("../includes/navbar.php"); ?>
+<?php
+include "../includes/navbar.php";
+include "../includes/sidebar.php";
+?>
 
-<div class="content">
+<div class="main">
 
-<div class="glass-header">
-
-    <div>
-
-        <h2>
-
-            <i class="fa-solid fa-users"></i>
-
-            Employee Records
-
-        </h2>
-
-        <p>
-
-            View workshop details of all employees.
-
-        </p>
-
-    </div>
-
+<div class="page-header">
+<h1>Employees</h1>
+<p>View and manage employee workshop records.</p>
 </div>
 
-<div class="glass-search">
+<div class="table-card">
 
-    <i class="fa-solid fa-magnifying-glass"></i>
+<?php
+if(isset($_SESSION["message"])){
+?>
+<p class="success-message">
+<?php
+echo $_SESSION["message"];
+unset($_SESSION["message"]);
+?>
+</p>
+<?php
+}
+?>
 
-    <input
+<div class="table-top">
 
-    type="text"
-
-    id="searchBox"
-
-    placeholder="Search IC No, Name, Designation..."
-
-    >
+<input
+type="text"
+id="search"
+placeholder="Search by IC, Name, Designation or Year">
 
 </div>
-
-<div class="glass-table">
 
 <table id="employeeTable">
 
@@ -115,9 +80,11 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <tr>
 
-<th>IC No</th>
+<th>IC</th>
 
-<th>Employee</th>
+<th>Name</th>
+
+<th>Phone</th>
 
 <th>Designation</th>
 
@@ -127,6 +94,8 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <th>Status</th>
 
+<th>Date</th>
+
 <th>Action</th>
 
 </tr>
@@ -135,143 +104,36 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <tbody>
 
-<?php
-
-while($row=mysqli_fetch_assoc($result))
-
-{
-
-?>
+<?php while($employee=$employeeResult->fetch_assoc()){ ?>
 
 <tr>
 
-<td>
-
-<b><?php echo $row['ic_no']; ?></b>
-
-</td>
-
-<td>
-
-<div class="employee-info">
-
-<i class="fa-solid fa-user-circle"></i>
-
-<div>
-
-<strong>
-
-<?php echo $row['name']; ?>
-
-</strong>
-
-<br>
-
-<small>
-
-<?php echo $row['email']; ?>
-
-</small>
-
-</div>
-
-</div>
-
-</td>
+<td><?php echo htmlspecialchars($employee["ic_number"]); ?></td>
+<td><?php echo htmlspecialchars($employee["name"]); ?></td>
+<td><?php echo htmlspecialchars($employee["phone"]); ?></td>
+<td><?php echo htmlspecialchars($employee["designation"]); ?></td>
+<td><?php echo htmlspecialchars($employee["workshop_name"]); ?></td>
+<td><?php echo htmlspecialchars($employee["workshop_year"]); ?></td>
 
 <td>
 
-<?php echo $row['designation']; ?>
-
-</td>
-
-<td>
-
-<?php echo $row['workshop_name']; ?>
-
-</td>
-
-<td>
-
-<?php echo $row['workshop_year']; ?>
-
-</td>
-
-<td>
-
-<?php
-
-if($row['attendance_status']=="Attended")
-{
-?>
-
-<span class="status-green">
-
-<i class="fa-solid fa-circle-check"></i>
-
-Attended
-
+<span class="badge <?php echo strtolower($employee["attendance_status"]); ?>">
+<?php echo htmlspecialchars($employee["attendance_status"]); ?>
 </span>
 
-<?php
-}
-elseif($row['attendance_status']=="Pending")
-{
-?>
-
-<span class="status-orange">
-
-<i class="fa-solid fa-clock"></i>
-
-Pending
-
-</span>
-
-<?php
-}
-else
-{
-?>
-
-<span class="status-red">
-
-<i class="fa-solid fa-circle-xmark"></i>
-
-Absent
-
-</span>
-
-<?php
-}
-?>
-
 </td>
 
+<td><?php echo htmlspecialchars($employee["attendance_date"]); ?></td>
+
 <td>
-
-<a
-
-href="fetch_employee.php?id=<?php echo $row['id']; ?>"
-
-class="action-btn"
-
->
-
-<i class="fa-solid fa-eye"></i>
-
-View
-
+<a href="update.php?ic=<?php echo $employee["ic_number"]; ?>" class="edit-btn">
+    <i class="fa-solid fa-pen"></i>
 </a>
-
 </td>
 
 </tr>
 
-<?php
-
-}
-
-?>
+<?php } ?>
 
 </tbody>
 
@@ -281,8 +143,9 @@ View
 
 </div>
 
+</div>
+
 <script src="../js/search.js"></script>
 
 </body>
-
 </html>

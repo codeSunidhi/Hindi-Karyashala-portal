@@ -15,26 +15,45 @@ $sql="
 
 SELECT
 
+w.id,
+
 e.ic_no,
 e.name,
+e.phone,
 e.designation,
+e.email,
 
-w.id,
 w.workshop_name,
 w.workshop_year,
-w.attendance_status
+w.attended_date,
+w.attendance_status,
+w.remarks,
+
+(
+
+SELECT status
+
+FROM reports r
+
+WHERE r.report_name=CONCAT('Report_',e.ic_no,'_',w.workshop_year)
+
+LIMIT 1
+
+) report_status
 
 FROM employee e
 
 INNER JOIN workshops w
+
 ON e.ic_no=w.ic_no
 
-LEFT JOIN roles r
-ON e.ic_no=r.ic_no
+LEFT JOIN roles ro
 
-WHERE r.role IS NULL
+ON e.ic_no=ro.ic_no
 
-ORDER BY e.ic_no
+WHERE ro.role IS NULL
+
+ORDER BY e.ic_no;
 
 ";
 
@@ -50,11 +69,11 @@ $result=mysqli_query($conn,$sql);
 
 <meta charset="UTF-8">
 
-<title>Update Employees</title>
+<title>Update Employee</title>
 
-<link rel="stylesheet" href="../css/sidebar.css">
-<link rel="stylesheet" href="../css/navbar.css">
 <link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/table.css">
+<link rel="stylesheet" href="../css/modal.css">
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -63,36 +82,21 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <body>
 
-<?php include("../includes/sidebar.php"); ?>
 <?php include("../includes/navbar.php"); ?>
 
+<?php include("../includes/sidebar.php"); ?>
+
 <div class="content">
-
-<div class="glass-header">
-
-<div>
 
 <h2>
 
 <i class="fa-solid fa-user-pen"></i>
 
-Update Workshop Attendance
+Update Employee
 
 </h2>
 
-<p>
-
-Select an employee to update workshop attendance.
-
-</p>
-
-</div>
-
-</div>
-
-<div class="glass-search">
-
-<i class="fa-solid fa-magnifying-glass"></i>
+<br>
 
 <input
 
@@ -100,13 +104,11 @@ type="text"
 
 id="searchBox"
 
-placeholder="Search IC No, Employee Name..."
+class="search-box"
 
->
+placeholder="Search Employee">
 
-</div>
-
-<div class="glass-table">
+<br><br>
 
 <table id="employeeTable">
 
@@ -114,15 +116,17 @@ placeholder="Search IC No, Employee Name..."
 
 <tr>
 
-<th>IC No</th>
+<th>IC</th>
 
-<th>Employee</th>
+<th>Name</th>
 
 <th>Workshop</th>
 
 <th>Year</th>
 
 <th>Status</th>
+
+<th>Report</th>
 
 <th>Action</th>
 
@@ -135,104 +139,46 @@ placeholder="Search IC No, Employee Name..."
 <?php
 
 while($row=mysqli_fetch_assoc($result))
-
 {
 
 ?>
 
 <tr>
 
-<td>
+<td><?= $row['ic_no']; ?></td>
 
-<b><?php echo $row['ic_no']; ?></b>
+<td><?= $row['name']; ?></td>
 
-</td>
+<td><?= $row['workshop_name']; ?></td>
 
-<td>
+<td><?= $row['workshop_year']; ?></td>
 
-<div class="employee-info">
-
-<i class="fa-solid fa-user-circle"></i>
-
-<div>
-
-<strong>
-
-<?php echo $row['name']; ?>
-
-</strong>
-
-<br>
-
-<small>
-
-<?php echo $row['designation']; ?>
-
-</small>
-
-</div>
-
-</div>
-
-</td>
-
-<td>
-
-<?php echo $row['workshop_name']; ?>
-
-</td>
-
-<td>
-
-<?php echo $row['workshop_year']; ?>
-
-</td>
+<td><?= $row['attendance_status']; ?></td>
 
 <td>
 
 <?php
 
-if($row['attendance_status']=="Attended")
+if($row['report_status']=="Verified")
 {
-?>
 
-<span class="status-green">
+echo "<span class='badge-blue'>Verified</span>";
 
-<i class="fa-solid fa-circle-check"></i>
-
-Attended
-
-</span>
-
-<?php
 }
-elseif($row['attendance_status']=="Pending")
+
+elseif($row['report_status']=="Pending")
 {
-?>
 
-<span class="status-orange">
+echo "<span class='badge-orange'>Pending</span>";
 
-<i class="fa-solid fa-clock"></i>
-
-Pending
-
-</span>
-
-<?php
 }
+
 else
+
 {
-?>
 
-<span class="status-red">
+echo "<span class='badge-grey'>Not Generated</span>";
 
-<i class="fa-solid fa-circle-xmark"></i>
-
-Absent
-
-</span>
-
-<?php
 }
 
 ?>
@@ -241,19 +187,15 @@ Absent
 
 <td>
 
-<a
+<button
 
-href="fetch_employee.php?id=<?php echo $row['id']; ?>"
+class="btn-edit"
 
-class="action-btn"
+onclick="window.location='fetch_employee.php?id=<?= $row['id']; ?>'">
 
->
+Edit
 
-<i class="fa-solid fa-pen-to-square"></i>
-
-Update
-
-</a>
+</button>
 
 </td>
 
@@ -271,16 +213,8 @@ Update
 
 </div>
 
-</div>
-
 <script src="../js/search.js"></script>
 
 </body>
 
 </html>
-
-<?php
-
-$conn->close();
-
-?>

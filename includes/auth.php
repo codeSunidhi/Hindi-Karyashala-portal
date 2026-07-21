@@ -1,45 +1,19 @@
 <?php
+session_start();
 
-if(session_status() == PHP_SESSION_NONE)
-{
-    session_start();
-}
-
-/* ==========================================
-   CHECK LOGIN
-========================================== */
-
-if(
-    !isset($_SESSION['loggedin']) ||
-    $_SESSION['loggedin'] !== true
-)
-{
-    header("Location:../index.php");
+if (!isset($_SESSION["ic_number"]) || !isset($_SESSION["role"])) {
+    header("Location: ../login.php");
     exit();
 }
 
-/* ==========================================
-   CHECK REQUIRED SESSION VALUES
-========================================== */
+$currentFolder = basename(dirname($_SERVER["PHP_SELF"]));
 
-$required = array(
-
-    "ic_no",
-    "name",
-    "role"
-
-);
-
-foreach($required as $value)
-{
-    if(!isset($_SESSION[$value]))
-    {
-        session_destroy();
-
-        header("Location:../index.php");
-
-        exit();
-    }
+if ($currentFolder == "admin" && $_SESSION["role"] != "Admin") {
+    header("Location: ../login.php");
+    exit();
 }
 
-?>
+if ($currentFolder == "employee" && $_SESSION["role"] != "Karyashala Admin") {
+    header("Location: ../login.php");
+    exit();
+}

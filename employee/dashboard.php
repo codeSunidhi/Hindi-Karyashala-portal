@@ -1,52 +1,42 @@
 <?php
+include "../includes/auth.php";
+include "../config/db.php";
 
-session_start();
+/* Total Employees */
+$totalEmployees = $conn->query("
+SELECT COUNT(*) total
+FROM employees
+WHERE ic_number NOT IN (1001,1002)
+")->fetch_assoc()['total'];
 
-include("../config/db.php");
-include("../includes/auth.php");
-
-if($_SESSION['role']!="Karyashala Admin")
-{
-    header("Location:../index.php");
-    exit();
-}
-
-/* ===============================
-   DASHBOARD COUNTS
-=============================== */
-
-$totalEmployees = mysqli_fetch_assoc(mysqli_query($conn,"
-SELECT COUNT(*) AS total
-FROM employee e
-LEFT JOIN roles r ON e.ic_no=r.ic_no
-WHERE r.ic_no IS NULL
-"));
-
-$attended = mysqli_fetch_assoc(mysqli_query($conn,"
-SELECT COUNT(*) AS total
+/* Attendance Counts */
+$attended = $conn->query("
+SELECT COUNT(*) total
 FROM workshops
 WHERE attendance_status='Attended'
-"));
+")->fetch_assoc()['total'];
 
-$pending = mysqli_fetch_assoc(mysqli_query($conn,"
-SELECT COUNT(*) AS total
+$pending = $conn->query("
+SELECT COUNT(*) total
 FROM workshops
 WHERE attendance_status='Pending'
-"));
+")->fetch_assoc()['total'];
 
-$absent = mysqli_fetch_assoc(mysqli_query($conn,"
-SELECT COUNT(*) AS total
+$absent = $conn->query("
+SELECT COUNT(*) total
 FROM workshops
 WHERE attendance_status='Absent'
-"));
+")->fetch_assoc()['total'];
 
-$activities = mysqli_query($conn,"
-SELECT activity,activity_date
+/* Recent Activities */
+$activity = $conn->query("
+SELECT
+activity,
+activity_date
 FROM activity_log
 ORDER BY activity_date DESC
 LIMIT 5
 ");
-
 ?>
 
 <!DOCTYPE html>
@@ -59,9 +49,7 @@ LIMIT 5
 
 <title>Karyashala Dashboard</title>
 
-<link rel="stylesheet" href="../css/sidebar.css">
-<link rel="stylesheet" href="../css/navbar.css">
-<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/layout.css">
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -72,151 +60,149 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <body>
 
-<?php include("../includes/sidebar.php"); ?>
+<div class="overlay">
 
-<?php include("../includes/navbar.php"); ?>
+<?php include "../includes/navbar.php"; ?>
 
-<div class="content">
+<?php include "../includes/employee_sidebar.php"; ?>
 
-<h2>
-<i class="fa-solid fa-gauge-high"></i>
-Dashboard
-</h2>
+<div class="main">
 
-<p>
-Welcome back,
-<b><?php echo $_SESSION['name']; ?></b>
-</p>
+<div class="page-header">
 
-<!-- CARDS -->
+<h1>Karyashala Dashboard</h1>
 
-<div class="card-container">
-
-<div class="dashboard-card">
-
-<i class="fa-solid fa-users"></i>
-
-<h3><?php echo $totalEmployees['total']; ?></h3>
-
-<p>Total Employees</p>
+<p>Manage workshop attendance and reports.</p>
 
 </div>
 
-<div class="dashboard-card">
+<div class="cards">
+
+<div class="card employees">
+
+<div class="card-icon">
+
+<i class="fa-solid fa-users"></i>
+
+</div>
+
+<h3>Total Employees</h3>
+
+<h2><?php echo $totalEmployees; ?></h2>
+
+<p>Registered Employees</p>
+
+</div>
+
+<div class="card attended">
+
+<div class="card-icon">
 
 <i class="fa-solid fa-user-check"></i>
 
-<h3><?php echo $attended['total']; ?></h3>
+</div>
 
-<p>Attended</p>
+<h3>Attended</h3>
+
+<h2><?php echo $attended; ?></h2>
+
+<p>Workshop Completed</p>
 
 </div>
 
-<div class="dashboard-card">
+<div class="card pending">
 
-<i class="fa-solid fa-user-clock"></i>
+<div class="card-icon">
 
-<h3><?php echo $pending['total']; ?></h3>
-
-<p>Pending</p>
+<i class="fa-solid fa-clock"></i>
 
 </div>
 
-<div class="dashboard-card">
+<h3>Pending</h3>
+
+<h2><?php echo $pending; ?></h2>
+
+<p>Attendance Pending</p>
+
+</div>
+
+<div class="card absent">
+
+<div class="card-icon">
 
 <i class="fa-solid fa-user-xmark"></i>
 
-<h3><?php echo $absent['total']; ?></h3>
+</div>
 
-<p>Absent</p>
+<h3>Absent</h3>
+
+<h2><?php echo $absent; ?></h2>
+
+<p>Employees Absent</p>
 
 </div>
 
 </div>
 
-<!-- QUICK ACTION -->
+<div class="chart-grid">
 
-<div class="quick-actions">
+<div class="section">
 
-<a href="view.php" class="action-btn">
+<h2>Attendance Overview</h2>
 
-<i class="fa-solid fa-users"></i>
-
-View Employees
-
-</a>
-
-<a href="update.php" class="action-btn">
-
-<i class="fa-solid fa-user-pen"></i>
-
-Update Attendance
-
-</a>
+<canvas id="pieChart"></canvas>
 
 </div>
 
-<br>
+<div class="section">
 
-<!-- MAIN SECTION -->
+<h2>Attendance Statistics</h2>
 
-<div class="dashboard-middle">
+<canvas id="barChart"></canvas>
 
-<div class="activity-box">
+</div>
 
-<h3>
+</div>
 
-<i class="fa-solid fa-clock-rotate-left"></i>
+<div class="section">
 
-Recent Activities
-
-</h3>
-
-<table class="activity-table">
-
-<tr>
-
-<th>Activity</th>
-
-<th>Date</th>
-
-</tr>
+<h2>Recent Activities</h2>
 
 <?php
 
-while($row=mysqli_fetch_assoc($activities))
+if($activity->num_rows>0){
 
-{
+while($row=$activity->fetch_assoc()){
 
 ?>
 
-<tr>
+<div class="activity-item">
 
-<td><?php echo $row['activity']; ?></td>
+<div class="activity-dot"></div>
 
-<td><?php echo date("d M Y H:i",strtotime($row['activity_date'])); ?></td>
+<div>
 
-</tr>
+<h4><?php echo htmlspecialchars($row["activity"]); ?></h4>
+
+<p><?php echo date("d-m-Y h:i A",strtotime($row["activity_date"])); ?></p>
+
+</div>
+
+</div>
 
 <?php
 
 }
 
+}
+
+else{
+
+echo "<p class='empty-text'>No recent activity found.</p>";
+
+}
+
 ?>
-
-</table>
-
-</div>
-
-<div class="chart-box">
-
-<h3>
-
-Attendance
-
-</h3>
-
-<canvas id="attendanceChart"></canvas>
 
 </div>
 
@@ -226,49 +212,35 @@ Attendance
 
 <script>
 
-new Chart(
+new Chart(document.getElementById("pieChart"),{
 
-document.getElementById("attendanceChart"),
-
-{
-
-type:"doughnut",
+type:"pie",
 
 data:{
 
-labels:[
-
-"Attended",
-
-"Pending",
-
-"Absent"
-
-],
+labels:["Attended","Pending","Absent"],
 
 datasets:[{
 
 data:[
 
-<?php echo $attended['total']; ?>,
+<?php echo $attended; ?>,
 
-<?php echo $pending['total']; ?>,
+<?php echo $pending; ?>,
 
-<?php echo $absent['total']; ?>
+<?php echo $absent; ?>
 
 ],
 
 backgroundColor:[
 
-"#22c55e",
+"#22C55E",
 
-"#fbbf24",
+"#F59E0B",
 
-"#ef4444"
+"#EF4444"
 
-],
-
-borderWidth:0
+]
 
 }]
 
@@ -278,19 +250,59 @@ options:{
 
 responsive:true,
 
+maintainAspectRatio:false
+
+}
+
+});
+
+new Chart(document.getElementById("barChart"),{
+
+type:"bar",
+
+data:{
+
+labels:["Attended","Pending","Absent"],
+
+datasets:[{
+
+label:"Employees",
+
+data:[
+
+<?php echo $attended; ?>,
+
+<?php echo $pending; ?>,
+
+<?php echo $absent; ?>
+
+],
+
+backgroundColor:[
+
+"#22C55E",
+
+"#F59E0B",
+
+"#EF4444"
+
+]
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+
+maintainAspectRatio:false,
+
 plugins:{
 
 legend:{
 
-position:"bottom",
-
-labels:{
-
-color:"white",
-
-font:{
-
-size:13
+display:false
 
 }
 
@@ -298,13 +310,7 @@ size:13
 
 }
 
-}
-
-}
-
-}
-
-);
+});
 
 </script>
 

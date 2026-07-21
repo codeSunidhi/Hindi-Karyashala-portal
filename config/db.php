@@ -1,39 +1,15 @@
 <?php
 
-/* ==========================================
-   DATABASE CONFIGURATION
-========================================== */
-
 $host = "localhost";
-$user = "root";
+$username = "root";
 $password = "";
 $database = "karyashala";
 
-/* ==========================================
-   CREATE CONNECTION
-========================================== */
+$conn = new mysqli($host, $username, $password, $database);
 
-$conn = new mysqli($host, $user, $password, $database);
-
-/* ==========================================
-   CHECK CONNECTION
-========================================== */
-
-if ($conn->connect_error)
-{
-    die("Database Connection Failed : " . $conn->connect_error);
+if ($conn->connect_error) {
+    die("Connection Failed: " . $conn->connect_error);
 }
 
-/* ==========================================
-   SET CHARACTER SET
-========================================== */
-
-$conn->set_charset("utf8mb4");
-
-/* ==========================================
-   SET TIMEZONE
-========================================== */
-
-date_default_timezone_set("Asia/Kolkata");
-
+$conn->set_charset("utf8");
 ?>

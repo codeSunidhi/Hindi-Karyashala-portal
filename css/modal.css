@@ -1,0 +1,288 @@
+.modal{
+display:none;
+position:fixed;
+left:0;
+top:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.65);
+backdrop-filter:blur(6px);
+z-index:9999;
+animation:fade .25s;
+}
+
+.modal-content{
+background:#fff;
+width:820px;
+max-width:92%;
+margin:45px auto;
+padding:30px;
+border-radius:20px;
+position:relative;
+animation:popup .3s ease;
+box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+
+.close{
+position:absolute;
+right:22px;
+top:18px;
+font-size:28px;
+font-weight:bold;
+cursor:pointer;
+color:#666;
+transition:.3s;
+}
+
+.close:hover{
+color:#EF4444;
+transform:rotate(90deg);
+}
+
+.modal-table{
+width:100%;
+border-collapse:collapse;
+margin-top:25px;
+}
+
+.modal-table tr:nth-child(even){
+background:#f8fafc;
+}
+
+.modal-table td{
+padding:14px 18px;
+border:1px solid #e5e7eb;
+color:#374151;
+font-size:15px;
+}
+
+.modal-table td:first-child{
+font-weight:600;
+background:#eff6ff;
+width:220px;
+color:#1e3a8a;
+}
+
+.modal-buttons{
+display:flex;
+justify-content:flex-end;
+gap:15px;
+margin-top:30px;
+}
+
+.save-btn{
+display:inline-flex;
+align-items:center;
+gap:8px;
+padding:12px 22px;
+background:#16A34A;
+color:#fff;
+text-decoration:none;
+border-radius:10px;
+font-weight:600;
+transition:.3s;
+}
+
+.save-btn:hover{
+background:#15803D;
+transform:translateY(-2px);
+}
+.cancel-btn{
+padding:12px 22px;
+border:none;
+background:#E5E7EB;
+color:#374151;
+border-radius:10px;
+cursor:pointer;
+font-weight:600;
+transition:.3s;
+}
+
+.cancel-btn:hover{
+background:#D1D5DB;
+}
+@keyframes popup{
+
+from{
+
+transform:translateY(-40px) scale(.95);
+opacity:0;
+
+}
+
+to{
+
+transform:translateY(0) scale(1);
+opacity:1;
+
+}
+
+}
+
+@keyframes fade{
+
+from{
+
+opacity:0;
+
+}
+
+to{
+
+opacity:1;
+
+}
+
+}
+.modal-header{
+margin-bottom:25px;
+padding-bottom:15px;
+border-bottom:1px solid #e5e7eb;
+}
+
+.modal-header h2{
+color:#1e3a8a;
+font-size:24px;
+margin-bottom:8px;
+}
+
+.modal-header p{
+color:#6b7280;
+font-size:14px;
+}
+
+.modal-header i{
+margin-right:10px;
+color:#2563eb;
+}
+/* ==========================
+   Generate Report Modal
+========================== */
+
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    background:rgba(0,0,0,.65);
+    backdrop-filter:blur(6px);
+    justify-content:center;
+    align-items:center;
+}
+
+.modal-content{
+    width:700px;
+    max-width:90%;
+    background:#ffffff;
+    border-radius:18px;
+    padding:30px;
+    position:relative;
+    animation:popup .3s ease;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+}
+
+.close{
+    position:absolute;
+    right:20px;
+    top:18px;
+    font-size:28px;
+    cursor:pointer;
+    color:#6b7280;
+    transition:.3s;
+}
+
+.close:hover{
+    color:#ef4444;
+    transform:rotate(90deg);
+}
+
+.modal-content h2{
+    margin-bottom:20px;
+    color:#1f2937;
+    font-size:28px;
+}
+
+.modal-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+}
+
+.modal-table td{
+    padding:14px 18px;
+    border:1px solid #e5e7eb;
+    font-size:15px;
+}
+
+.modal-table td:first-child{
+    width:220px;
+    font-weight:600;
+    background:#eff6ff;
+    color:#1e40af;
+}
+
+.modal-table tr:nth-child(even){
+    background:#f8fafc;
+}
+
+.modal-content p{
+    margin-top:25px;
+    color:#4b5563 !important;
+    line-height:1.7;
+    font-size:15px;
+}
+
+.modal-buttons{
+    display:flex;
+    justify-content:flex-end;
+    gap:15px;
+    margin-top:30px;
+}
+
+.modal-buttons .save-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    background:#16a34a;
+    color:#fff;
+    padding:12px 22px;
+    border-radius:10px;
+    text-decoration:none;
+    border:none;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.modal-buttons .save-btn:hover{
+    background:#15803d;
+    transform:translateY(-2px);
+}
+
+.modal-buttons .cancel-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:12px 22px;
+    border:none;
+    border-radius:10px;
+    background:#e5e7eb;
+    color:#374151;
+    cursor:pointer;
+    font-weight:600;
+    transition:.3s;
+}
+
+.modal-buttons .cancel-btn:hover{
+    background:#d1d5db;
+}
+
+@keyframes popup{
+    from{
+        transform:translateY(-30px) scale(.95);
+        opacity:0;
+    }
+    to{
+        transform:translateY(0) scale(1);
+        opacity:1;
+    }
+}

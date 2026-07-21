@@ -1,60 +1,51 @@
 <?php
+include "../includes/auth.php";
+include "../config/db.php";
 
-session_start();
-
-include("../config/db.php");
-include("../includes/auth.php");
-
-if(
-    !isset($_SESSION['role']) ||
-    $_SESSION['role']!="Admin"
-)
-{
-    header("Location:../index.php");
+if(!isset($_GET["ic"])){
+    header("Location:view.php");
     exit();
 }
 
-$sql = "
+$ic=(int)$_GET["ic"];
 
-SELECT
+$sql="SELECT
+employees.ic_number,
+employees.name,
+employees.designation,
+employees.phone,
+employees.email,
+workshops.workshop_name,
+workshops.workshop_year,
+workshops.attendance_date,
+workshops.attendance_status,
+workshops.remarks
+FROM employees
+LEFT JOIN workshops
+ON employees.ic_number=workshops.employee_ic
+WHERE employees.ic_number=$ic
+LIMIT 1";
 
-e.ic_no,
-e.name,
-e.phone,
-e.designation,
-e.email,
+$result=$conn->query($sql);
 
-w.id,
-w.workshop_year,
-w.workshop_name,
-w.attendance_status
+if($result->num_rows==0){
+    header("Location:view.php");
+    exit();
+}
 
-FROM employee e
+$row=$result->fetch_assoc();
 
-INNER JOIN workshops w
-ON e.ic_no = w.ic_no
-
-ORDER BY e.ic_no
-
-";
-
-$result=mysqli_query($conn,$sql);
-
+$_SESSION["csrf_token"]=bin2hex(random_bytes(32));
 ?>
 
 <!DOCTYPE html>
-
 <html>
-
 <head>
 
-<meta charset="UTF-8">
+<title>Update Employee</title>
 
-<title>Update Employees</title>
-
-<link rel="stylesheet" href="../css/sidebar.css">
-<link rel="stylesheet" href="../css/navbar.css">
-<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/form.css">
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -63,224 +54,196 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <body>
 
-<?php include("../includes/sidebar.php"); ?>
-<?php include("../includes/navbar.php"); ?>
+<div class="overlay">
 
-<div class="content">
+<?php
+include "../includes/navbar.php";
+include "../includes/sidebar.php";
+?>
 
-<div class="glass-header">
+<div class="main">
 
-<div>
-
-<h2>
-
-<i class="fa-solid fa-user-pen"></i>
-
-Update Workshop Attendance
-
-</h2>
-
-<p>
-
-Select an employee to update workshop attendance.
-
-</p>
-
+<div class="page-header">
+<h1>Update Workshop</h1>
+<p>Update employee workshop attendance details.</p>
 </div>
 
-</div>
+<div class="form-card">
 
-<div class="glass-search">
-
-<i class="fa-solid fa-magnifying-glass"></i>
+<form action="update_process.php" method="POST" onsubmit="return validateUpdate();">
 
 <input
+type="hidden"
+name="csrf_token"
+value="<?php echo $_SESSION["csrf_token"]; ?>">
 
+<input
+type="hidden"
+name="ic_number"
+value="<?php echo $row["ic_number"]; ?>">
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>IC Number</label>
+<input
 type="text"
-
-id="searchBox"
-
-placeholder="Search IC No, Employee Name..."
-
->
-
+value="<?php echo $row["ic_number"]; ?>"
+readonly>
 </div>
 
-<div class="glass-table">
-
-<table id="employeeTable">
-
-<thead>
-
-<tr>
-
-<th>IC No</th>
-
-<th>Employee</th>
-
-<th>Workshop</th>
-
-<th>Year</th>
-
-<th>Status</th>
-
-<th>Action</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-<?php
-
-while($row=mysqli_fetch_assoc($result))
-
-{
-
-?>
-
-<tr>
-
-<td>
-
-<b><?php echo $row['ic_no']; ?></b>
-
-</td>
-
-<td>
-
-<div class="employee-info">
-
-<i class="fa-solid fa-user-circle"></i>
-
-<div>
-
-<strong>
-
-<?php echo $row['name']; ?>
-
-</strong>
-
-<br>
-
-<small>
-
-<?php echo $row['designation']; ?>
-
-</small>
-
+<div class="form-group">
+<label>Employee Name</label>
+<input
+type="text"
+value="<?php echo htmlspecialchars($row["name"]); ?>"
+readonly>
 </div>
 
+<div class="form-group">
+<label>Designation</label>
+<input
+type="text"
+value="<?php echo htmlspecialchars($row["designation"]); ?>"
+readonly>
 </div>
 
-</td>
+<div class="form-group">
+<label>Workshop Name</label>
+<input
+type="text"
+name="workshop_name"
+id="workshop_name"
+value="<?php echo htmlspecialchars($row["workshop_name"]); ?>">
+</div>
 
-<td>
+<div class="form-group">
+<label>Workshop Year</label>
+<input
+type="number"
+name="workshop_year"
+id="workshop_year"
+min="2024"
+max="2100"
+value="<?php echo $row["workshop_year"]; ?>">
+</div>
 
-<?php echo $row['workshop_name']; ?>
+<div class="form-group">
+<label>Attendance Date</label>
+<input
+type="date"
+name="attendance_date"
+id="attendance_date"
+value="<?php echo $row["attendance_date"]; ?>">
+</div>
 
-</td>
+<div class="form-group full">
+<label>Attendance Status</label>
 
-<td>
+<select
+name="attendance_status"
+id="attendance_status">
 
-<?php echo $row['workshop_year']; ?>
+<option value="">Select Status</option>
 
-</td>
-
-<td>
-
-<?php
-
-if($row['attendance_status']=="Attended")
-{
-?>
-
-<span class="status-green">
-
-<i class="fa-solid fa-circle-check"></i>
-
+<option value="Attended"
+<?php if($row["attendance_status"]=="Attended") echo "selected"; ?>>
 Attended
+</option>
 
-</span>
-
-<?php
-}
-elseif($row['attendance_status']=="Pending")
-{
-?>
-
-<span class="status-orange">
-
-<i class="fa-solid fa-clock"></i>
-
+<option value="Pending"
+<?php if($row["attendance_status"]=="Pending") echo "selected"; ?>>
 Pending
+</option>
 
-</span>
-
-<?php
-}
-else
-{
-?>
-
-<span class="status-red">
-
-<i class="fa-solid fa-circle-xmark"></i>
-
+<option value="Absent"
+<?php if($row["attendance_status"]=="Absent") echo "selected"; ?>>
 Absent
+</option>
 
-</span>
+</select>
 
-<?php
-}
+</div>
 
-?>
+<div class="form-group full">
+<label>Remarks</label>
 
-</td>
-
-<td>
-
-<a
-
-href="fetch_employee.php?id=<?php echo $row['id']; ?>"
-
-class="action-btn"
-
->
-
-<i class="fa-solid fa-pen-to-square"></i>
-
-Update
-
-</a>
-
-</td>
-
-</tr>
-
-<?php
-
-}
-
-?>
-
-</tbody>
-
-</table>
+<textarea
+name="remarks"
+id="remarks"
+rows="4"><?php echo htmlspecialchars($row["remarks"]); ?></textarea>
 
 </div>
 
 </div>
 
-<script src="../js/search.js"></script>
+<p id="error" class="error"></p>
+
+<div class="buttons">
+
+<button
+type="submit"
+class="save-btn">
+
+<i class="fa-solid fa-floppy-disk"></i>
+
+Update Details
+
+</button>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+function validateUpdate(){
+
+let workshop=document.getElementById("workshop_name").value.trim();
+let year=document.getElementById("workshop_year").value.trim();
+let date=document.getElementById("attendance_date").value;
+let status=document.getElementById("attendance_status").value;
+let remarks=document.getElementById("remarks").value.trim();
+let error=document.getElementById("error");
+
+error.innerHTML="";
+
+if(workshop==""){
+error.innerHTML="Please enter workshop name.";
+return false;
+}
+
+if(year==""){
+error.innerHTML="Please enter workshop year.";
+return false;
+}
+
+if(status==""){
+error.innerHTML="Please select attendance status.";
+return false;
+}
+
+if(status!="Pending" && date==""){
+error.innerHTML="Please select attendance date.";
+return false;
+}
+
+if(remarks.length>255){
+error.innerHTML="Remarks cannot exceed 255 characters.";
+return false;
+}
+
+return true;
+
+}
+
+</script>
 
 </body>
-
 </html>
-
-<?php
-
-$conn->close();
-
-?>

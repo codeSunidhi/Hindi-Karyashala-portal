@@ -1,177 +1,171 @@
 <?php
-
 session_start();
 
-include("config/db.php");
+if (isset($_SESSION['role'])) {
 
-if($_SERVER["REQUEST_METHOD"]!="POST")
-{
-    header("Location:index.php");
-    exit();
+    if ($_SESSION['role'] == "Admin") {
+        header("Location: admin/dashboard.php");
+        exit();
+    }
+
+    if ($_SESSION['role'] == "Karyashala Admin") {
+        header("Location: employee/dashboard.php");
+        exit();
+    }
 }
 
-$ic_no = trim($_POST['ic_no']);
-$password = trim($_POST['password']);
+include "config/db.php";
 
-if(empty($ic_no) || empty($password))
-{
-    echo "<script>
+$error = "";
 
-    alert('Please enter IC Number and Password.');
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    window.location='index.php';
+    $ic = trim($_POST["ic_no"]);
+    $password = trim($_POST["password"]);
 
-    </script>";
+    if ($ic == "" || $password == "") {
+        $error = "Please enter IC Number and Password.";
+    } else {
 
-    exit();
+        $stmt = $conn->prepare("SELECT * FROM roles WHERE ic_number=?");
+        $stmt->bind_param("i", $ic);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+
+        if ($result->num_rows == 1) {
+
+            $row = $result->fetch_assoc();
+
+            if ($password == $row["password"]) {
+
+                session_regenerate_id(true);
+
+                $_SESSION["ic_number"] = $row["ic_number"];
+                $_SESSION["role"] = $row["role"];
+
+                if ($row["role"] == "Admin") {
+                    header("Location: admin/dashboard.php");
+                    exit();
+                }
+
+                header("Location: employee/dashboard.php");
+                exit();
+            }
+
+            $error = "Invalid IC Number or Password.";
+        } else {
+            $error = "Invalid IC Number or Password.";
+        }
+    }
 }
+?>
 
-/* ==========================================
-   LOGIN QUERY
-========================================== */
+<!DOCTYPE html>
+<html>
 
-$sql = "
+<head>
 
-SELECT
+    <title>Hindi Karyashala Portal</title>
 
-e.ic_no,
-e.name,
-e.phone,
-e.designation,
-e.email,
+    <link rel="stylesheet" href="css/login.css">
 
-r.password,
-r.role
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-FROM employee e
+</head>
 
-INNER JOIN roles r
+<body>
 
-ON e.ic_no = r.ic_no
+<div class="overlay">
 
-WHERE e.ic_no = ?
+<div class="login-card">
 
-";
+<div class="logo">
 
-$stmt = $conn->prepare($sql);
+<i class="fa-solid fa-book-open-reader"></i>
 
-$stmt->bind_param("i",$ic_no);
+<h2>Hindi Karyashala Portal</h2>
 
-$stmt->execute();
+<p>Workshop Management System</p>
 
-$result = $stmt->get_result();
+</div>
 
-if($result->num_rows==0)
+<form method="POST">
+
+<div class="input-group">
+
+<label>IC Number</label>
+
+<input
+type="text"
+name="ic_no"
+id="ic_no"
+maxlength="4"
+placeholder="Enter IC Number">
+
+</div>
+
+<div class="input-group">
+
+<label>Password</label>
+
+<input
+type="password"
+name="password"
+id="password"
+placeholder="Enter Password">
+
+</div>
+
+<?php
+
+if($error!="")
 {
-    echo "<script>
-
-    alert('Invalid IC Number.');
-
-    window.location='index.php';
-
-    </script>";
-
-    exit();
+    echo "<div class='error'>$error</div>";
 }
-
-$user = $result->fetch_assoc();
-
-$stmt->close();
-
-/* ==========================================
-   PASSWORD CHECK
-========================================== */
-
-if($password != $user['password'])
-{
-    echo "<script>
-
-    alert('Incorrect Password.');
-
-    window.location='index.php';
-
-    </script>";
-
-    exit();
-}
-
-/* ==========================================
-   CREATE SESSION
-========================================== */
-
-$_SESSION['loggedin'] = true;
-
-$_SESSION['ic_no'] = $user['ic_no'];
-
-$_SESSION['name'] = $user['name'];
-
-$_SESSION['phone'] = $user['phone'];
-
-$_SESSION['designation'] = $user['designation'];
-
-$_SESSION['email'] = $user['email'];
-
-$_SESSION['role'] = $user['role'];
-
-/* ==========================================
-   ACTIVITY LOG
-========================================== */
-
-$activity = $user['name']." logged into the system";
-
-$sql = "
-
-INSERT INTO activity_log
-
-(
-
-activity,
-
-activity_by
-
-)
-
-VALUES
-
-(
-
-?,
-
-?
-
-)
-
-";
-
-$stmt = $conn->prepare($sql);
-
-$stmt->bind_param(
-
-"si",
-
-$activity,
-
-$user['ic_no']
-
-);
-
-$stmt->execute();
-
-$stmt->close();
-
-/* ==========================================
-   REDIRECT
-========================================== */
-
-if($user['role']=="Admin")
-{
-    header("Location:admin/dashboard.php");
-}
-else
-{
-    header("Location:employee/dashboard.php");
-}
-
-exit();
 
 ?>
+
+<button type="submit">
+
+<i class="fa-solid fa-right-to-bracket"></i>
+
+Login
+
+</button>
+
+</form>
+
+<div class="footer">
+
+<p>
+
+Authorized users only.
+
+</p>
+
+</div>
+
+</div>
+
+<div class="welcome">
+
+<h1>Welcome to Hindi Karyashala Portal</h1>
+
+<p>
+
+Manage employee workshop attendance,
+generate reports,
+verify submissions,
+and monitor activities through one secure platform.
+
+</p>
+
+</div>
+
+</div>
+
+</body>
+
+</html>

@@ -1,41 +1,21 @@
-document.addEventListener("DOMContentLoaded", function () {
+const search=document.getElementById("search");
 
-    const searchBox = document.getElementById("searchBox");
+if(search){
 
-    if (!searchBox) {
-        return;
-    }
+search.addEventListener("keyup",function(){
 
-    searchBox.addEventListener("keyup", function () {
+let value=this.value.toLowerCase();
 
-        let filter = this.value.toLowerCase().trim();
+let rows=document.querySelectorAll("#employeeTable tbody tr");
 
-        let table = document.getElementById("employeeTable");
+rows.forEach(function(row){
 
-        if (!table) {
-            return;
-        }
+let text=row.innerText.toLowerCase();
 
-        let rows = table.getElementsByTagName("tr");
-
-        for (let i = 1; i < rows.length; i++) {
-
-            let row = rows[i];
-
-            let text = row.textContent.toLowerCase();
-
-            if (text.includes(filter)) {
-
-                row.style.display = "";
-
-            } else {
-
-                row.style.display = "none";
-
-            }
-
-        }
-
-    });
+row.style.display=text.includes(value)?"":"none";
 
 });
+
+});
+
+}

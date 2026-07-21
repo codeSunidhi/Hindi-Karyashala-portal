@@ -1,212 +1,132 @@
 <?php
+include "../includes/auth.php";
+include "../config/db.php";
 
-session_start();
+$historySql="SELECT
+reports.report_id,
+reports.employee_ic,
+employees.name,
+reports.report_name,
+reports.workshop_year,
+reports.generated_date,
+reports.verified_date,
+v.name AS verified_by
+FROM reports
+INNER JOIN employees
+ON reports.employee_ic=employees.ic_number
+LEFT JOIN employees v
+ON reports.verified_by=v.ic_number
+WHERE reports.status='Verified'
+ORDER BY reports.verified_date DESC";
 
-include("../config/db.php");
-include("../includes/auth.php");
-
-if(
-    !isset($_SESSION['role']) ||
-    $_SESSION['role']!="Admin"
-)
-{
-    header("Location:../index.php");
-    exit();
-}
-
-$sql="
-
-SELECT
-
-r.id,
-r.report_name,
-r.report_year,
-r.generated_date,
-r.verified_date,
-r.json_path,
-
-e.name,
-e.ic_no,
-
-v.name AS verified_by_name
-
-FROM reports r
-
-INNER JOIN employee e
-
-ON r.employee_ic=e.ic_no
-
-LEFT JOIN employee v
-
-ON r.verified_by=v.ic_no
-
-WHERE r.status='Verified'
-
-ORDER BY r.verified_date DESC
-
-";
-
-$result=mysqli_query($conn,$sql);
-
+$historyResult=$conn->query($historySql);
 ?>
 
 <!DOCTYPE html>
-
 <html>
-
 <head>
 
-<meta charset="UTF-8">
+<title>Verification History</title>
 
-<title>Verified Report History</title>
-
-<link rel="stylesheet" href="../css/sidebar.css">
-<link rel="stylesheet" href="../css/navbar.css">
-<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/table.css">
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-<script src="../js/search.js"></script>
 
 </head>
 
 <body>
 
-<?php include("../includes/sidebar.php"); ?>
-<?php include("../includes/navbar.php"); ?>
+<div class="overlay">
 
-<div class="content">
+<?php
+include "../includes/navbar.php";
+include "../includes/sidebar.php";
+?>
 
-<h2>
+<div class="main">
 
-<i class="fa-solid fa-clock-rotate-left"></i>
+<div class="page-header">
 
-Verified Report History
+<h1>Verification History</h1>
 
-</h2>
+<p>View all verified workshop reports.</p>
 
-<p>
+</div>
 
-All reports verified by the Administrator.
+<div class="table-card">
 
-</p>
+<div class="table-top">
 
 <input
-
 type="text"
+id="search"
+placeholder="Search by IC, Employee or Year">
 
-id="searchBox"
+</div>
 
-class="search-box"
+<table id="employeeTable">
 
-placeholder="Search employee, report or year..."
-
->
-
-<br><br>
-
-<div class="activity-box">
-
-<table
-
-class="activity-table"
-
-id="employeeTable"
-
->
+<thead>
 
 <tr>
 
-<th>IC No</th>
+<th>Report ID</th>
+
+<th>IC Number</th>
 
 <th>Employee</th>
 
 <th>Report</th>
 
-<th>Year</th>
+<th>Workshop Year</th>
+
+<th>Generated Date</th>
 
 <th>Verified By</th>
 
-<th>Date</th>
-
-<th>JSON</th>
+<th>Verified Date</th>
 
 </tr>
 
-<?php
+</thead>
 
-while($row=mysqli_fetch_assoc($result))
+<tbody>
 
-{
-
-?>
+<?php while($history=$historyResult->fetch_assoc()){ ?>
 
 <tr>
 
-<td>
+<td><?php echo htmlspecialchars($history["report_id"]); ?></td>
 
-<?php echo $row['ic_no']; ?>
+<td><?php echo htmlspecialchars($history["employee_ic"]); ?></td>
 
-</td>
+<td><?php echo htmlspecialchars($history["name"]); ?></td>
 
-<td>
+<td><?php echo htmlspecialchars($history["report_name"]); ?></td>
 
-<?php echo $row['name']; ?>
+<td><?php echo htmlspecialchars($history["workshop_year"]); ?></td>
 
-</td>
+<td><?php echo date("d-m-Y",strtotime($history["generated_date"])); ?></td>
 
-<td>
-
-<?php echo $row['report_name']; ?>
-
-</td>
+<td><?php echo htmlspecialchars($history["verified_by"]); ?></td>
 
 <td>
-
-<?php echo $row['report_year']; ?>
-
-</td>
-
-<td>
-
-<?php echo $row['verified_by_name']; ?>
-
-</td>
-
-<td>
-
-<?php echo date("d M Y",strtotime($row['verified_date'])); ?>
-
-</td>
-
-<td>
-
-<a
-
-href="../<?php echo $row['json_path']; ?>"
-
-target="_blank"
-
-class="action-btn"
-
->
-
-<i class="fa-solid fa-file-code"></i>
-
-View JSON
-
-</a>
-
+<?php
+if($history["verified_date"]!=""){
+echo date("d-m-Y",strtotime($history["verified_date"]));
+}else{
+echo "-";
+}
+?>
 </td>
 
 </tr>
 
-<?php
+<?php } ?>
 
-}
-
-?>
+</tbody>
 
 </table>
 
@@ -214,12 +134,9 @@ View JSON
 
 </div>
 
+</div>
+
+<script src="../js/search.js"></script>
+
 </body>
-
 </html>
-
-<?php
-
-$conn->close();
-
-?>

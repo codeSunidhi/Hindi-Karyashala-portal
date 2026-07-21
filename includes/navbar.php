@@ -1,64 +1,34 @@
 <?php
-
-$currentPage = basename($_SERVER['PHP_SELF']);
-
+$stmt = $conn->prepare("SELECT name FROM employees WHERE ic_number=?");
+$stmt->bind_param("i", $_SESSION["ic_number"]);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
 ?>
 
-<div class="navbar">
+<nav class="navbar">
 
-    <div class="navbar-left">
+    <div class="logo">
+        <img src="../images/logo.png" alt="Logo">
 
-        <i class="fa-solid fa-book-open"></i>
-
-        <span class="portal-title">
-
-            Hindi Karyashala Portal
-
-        </span>
-
+        <div>
+            <h2>Hindi Karyashala Portal</h2>
+            <p>Workshop Management System</p>
+        </div>
     </div>
 
-    <div class="navbar-right">
+    <div class="user">
 
         <div class="user-info">
-
-            <div class="user-name">
-
-                <?php echo $_SESSION['name']; ?>
-
-            </div>
-
-            <div class="user-role">
-
-                <?php echo $_SESSION['designation']; ?>
-
-            </div>
-
-            <div class="user-ic">
-
-                IC No :
-                <?php echo $_SESSION['ic_no']; ?>
-
-            </div>
-
+            <h4><?php echo htmlspecialchars($user["name"]); ?></h4>
+            <span><?php echo htmlspecialchars($_SESSION["role"]); ?></span>
         </div>
 
-        <a
-
-        href="../logout.php"
-
-        class="logout-btn"
-
-        onclick="return confirm('Are you sure you want to logout?');"
-
-        >
-
+        <a href="../logout.php" class="logout">
             <i class="fa-solid fa-right-from-bracket"></i>
-
             Logout
-
         </a>
 
     </div>
 
-</div>
+</nav>

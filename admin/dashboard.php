@@ -1,370 +1,319 @@
 <?php
+include "../includes/auth.php";
+include "../config/db.php";
 
-session_start();
+$totalEmployees = $conn->query("SELECT COUNT(*) total FROM employees WHERE ic_number NOT IN (1001,1002)")->fetch_assoc()['total'];
 
-include("../config/db.php");
-include("../includes/auth.php");
+$pendingReports = $conn->query("SELECT COUNT(*) total FROM reports WHERE status='Pending'")->fetch_assoc()['total'];
 
-if(
-    !isset($_SESSION['role']) ||
-    $_SESSION['role']!="Admin"
-)
-{
-    header("Location:../index.php");
-    exit();
+$verifiedReports = $conn->query("SELECT COUNT(*) total FROM reports WHERE status='Verified'")->fetch_assoc()['total'];
+
+$attended = $conn->query("SELECT COUNT(*) total FROM workshops WHERE attendance_status='Attended'")->fetch_assoc()['total'];
+
+$pendingAttendance = $conn->query("SELECT COUNT(*) total FROM workshops WHERE attendance_status='Pending'")->fetch_assoc()['total'];
+
+$absent = $conn->query("SELECT COUNT(*) total FROM workshops WHERE attendance_status='Absent'")->fetch_assoc()['total'];
+
+$attendance = [];
+$result = $conn->query("SELECT attendance_status, COUNT(*) total FROM workshops GROUP BY attendance_status");
+
+while ($row = $result->fetch_assoc()) {
+    $attendance[$row["attendance_status"]] = $row["total"];
 }
 
-/* ===========================
-   REPORT COUNTS
-=========================== */
+$attendedCount = $attendance["Attended"] ?? 0;
+$pendingCount = $attendance["Pending"] ?? 0;
+$absentCount = $attendance["Absent"] ?? 0;
 
-$pending = mysqli_fetch_assoc(mysqli_query($conn,"
-SELECT COUNT(*) total
-FROM reports
-WHERE status='Pending'
-"));
+$years = [];
+$yearTotals = [];
 
-$verified = mysqli_fetch_assoc(mysqli_query($conn,"
-SELECT COUNT(*) total
-FROM reports
-WHERE status='Verified'
-"));
+$result = $conn->query("SELECT workshop_year, COUNT(*) total FROM workshops GROUP BY workshop_year ORDER BY workshop_year");
 
-$employees = mysqli_fetch_assoc(mysqli_query($conn,"
-SELECT COUNT(*) total
-FROM employee
-"));
+while ($row = $result->fetch_assoc()) {
+    $years[] = $row["workshop_year"];
+    $yearTotals[] = $row["total"];
+}
 
-/* ===========================
-   ATTENDANCE COUNTS
-=========================== */
+$recentReports = $conn->query("
+    SELECT reports.report_name,
+           employees.name,
+           reports.workshop_year,
+           reports.status,
+           reports.generated_date
+    FROM reports
+    INNER JOIN employees
+    ON reports.employee_ic = employees.ic_number
+    ORDER BY reports.generated_date DESC
+    LIMIT 5
+");
 
-$attended = mysqli_fetch_assoc(mysqli_query($conn,"
-SELECT COUNT(*) total
-FROM workshops
-WHERE attendance_status='Attended'
-"));
-
-$pendingAttendance = mysqli_fetch_assoc(mysqli_query($conn,"
-SELECT COUNT(*) total
-FROM workshops
-WHERE attendance_status='Pending'
-"));
-
-$absent = mysqli_fetch_assoc(mysqli_query($conn,"
-SELECT COUNT(*) total
-FROM workshops
-WHERE attendance_status='Absent'
-"));
-
-/* ===========================
-   RECENT ACTIVITY
-=========================== */
-
-$activities = mysqli_query($conn,"
-SELECT activity,activity_date
-FROM activity_log
-ORDER BY activity_date DESC
-LIMIT 5
+$activities = $conn->query("
+    SELECT activity,
+           activity_date
+    FROM activity_log
+    ORDER BY activity_date DESC
+    LIMIT 5
 ");
 
 ?>
 
 <!DOCTYPE html>
-
-<html lang="en">
-
+<html>
 <head>
-
-<meta charset="UTF-8">
-
-<title>Administrator Dashboard</title>
-
-<link rel="stylesheet" href="../css/sidebar.css">
-<link rel="stylesheet" href="../css/navbar.css">
-<link rel="stylesheet" href="../css/dashboard.css">
-
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 
 <body>
 
-<?php include("../includes/sidebar.php"); ?>
-<?php include("../includes/navbar.php"); ?>
-
-<div class="content">
-
-<div class="glass-header">
-
-<div>
-
-<h2>
-
-<i class="fa-solid fa-user-shield"></i>
-
-Administrator Dashboard
-
-</h2>
-
-<p>
-
-Welcome,
-
-<b><?php echo $_SESSION['name']; ?></b>
-
-</p>
-
-</div>
-
-</div>
-
-<!-- DASHBOARD CARDS -->
-
-<div class="card-container">
-
-<div class="dashboard-card">
-
-<i class="fa-solid fa-users"></i>
-
-<h3><?php echo $employees['total']; ?></h3>
-
-<p>Total Employees</p>
-
-</div>
-
-<div class="dashboard-card">
-
-<i class="fa-solid fa-file-circle-check"></i>
-
-<h3><?php echo $verified['total']; ?></h3>
-
-<p>Verified Reports</p>
-
-</div>
-
-<div class="dashboard-card">
-
-<i class="fa-solid fa-file-circle-exclamation"></i>
-
-<h3><?php echo $pending['total']; ?></h3>
-
-<p>Pending Reports</p>
-
-</div>
-
-<div class="dashboard-card">
-
-<i class="fa-solid fa-book"></i>
-
-<h3><?php echo $verified['total']+$pending['total']; ?></h3>
-
-<p>Total Reports</p>
-
-</div>
-
-</div>
-
-<!-- QUICK ACTIONS -->
-
-<div class="quick-actions">
-
-<a href="../employee/view.php" class="action-btn">
-
-<i class="fa-solid fa-users"></i>
-
-View Employees
-
-</a>
-
-<a href="../employee/update.php" class="action-btn">
-
-<i class="fa-solid fa-user-pen"></i>
-
-Update Employees
-
-</a>
-
-<a href="add_employee.php" class="action-btn">
-
-<i class="fa-solid fa-user-plus"></i>
-
-Add Employee
-
-</a>
-
-<a href="reports.php" class="action-btn">
-
-<i class="fa-solid fa-file-lines"></i>
-
-Pending Reports
-
-</a>
-
-<a href="history.php" class="action-btn">
-
-<i class="fa-solid fa-clock-rotate-left"></i>
-
-History
-
-</a>
-
-</div>
-
-<br>
-
-<div class="dashboard-middle">
-
-<div class="activity-box">
-
-<h3>
-
-<i class="fa-solid fa-clock-rotate-left"></i>
-
-Recent Activities
-
-</h3>
-
-<table class="activity-table">
-
-<tr>
-
-<th>Activity</th>
-
-<th>Date</th>
-
-</tr>
+<div class="overlay">
 
 <?php
-
-while($row=mysqli_fetch_assoc($activities))
-{
-
+include "../includes/navbar.php";
+include "../includes/sidebar.php";
 ?>
 
-<tr>
+<div class="main">
 
-<td><?php echo htmlspecialchars($row['activity']); ?></td>
-
-<td><?php echo date("d M Y H:i",strtotime($row['activity_date'])); ?></td>
-
-</tr>
-
-<?php
-
-}
-
-?>
-
-</table>
-
+<div class="page-header">
+    <h1>Admin Dashboard</h1>
+    <p>
+        Monitor employee workshops, attendance records,
+        reports, and verification activities from one place.
+    </p>
 </div>
 
-<div class="chart-box">
+<div class="cards">
 
-<h3>Workshop Attendance</h3>
+<div class="card employees">
+    <div class="card-icon">
+        <i class="fa-solid fa-users"></i>
+    </div>
+    <h3>Total Employees</h3>
+    <h2><?php echo $totalEmployees; ?></h2>
+    <p>Registered Employees</p>
+</div>
 
-<canvas id="attendanceChart"></canvas>
+<div class="card pending-report">
+    <div class="card-icon">
+        <i class="fa-solid fa-file-circle-exclamation"></i>
+    </div>
+    <h3>Pending Reports</h3>
+    <h2><?php echo $pendingReports; ?></h2>
+    <p>Awaiting Verification</p>
+</div>
 
+<div class="card verified">
+    <div class="card-icon">
+        <i class="fa-solid fa-circle-check"></i>
+    </div>
+    <h3>Verified Reports</h3>
+    <h2><?php echo $verifiedReports; ?></h2>
+    <p>Completed Reports</p>
+</div>
+
+<div class="card attended">
+    <div class="card-icon">
+        <i class="fa-solid fa-user-check"></i>
+    </div>
+    <h3>Attended</h3>
+    <h2><?php echo $attended; ?></h2>
+    <p>Workshop Attendance</p>
+</div>
+
+<div class="card pending">
+    <div class="card-icon">
+        <i class="fa-solid fa-hourglass-half"></i>
+    </div>
+    <h3>Pending Attendance</h3>
+    <h2><?php echo $pendingAttendance; ?></h2>
+    <p>Waiting For Update</p>
+</div>
+
+<div class="card absent">
+    <div class="card-icon">
+        <i class="fa-solid fa-user-xmark"></i>
+    </div>
+    <h3>Absent</h3>
+    <h2><?php echo $absent; ?></h2>
+    <p>Workshop Absence</p>
 </div>
 
 </div>
+<div class="chart-grid">
 
-<br>
+    <div class="section">
+        <h2>Attendance Overview</h2>
+        <div class="pie-wrapper">
+    <canvas id="attendanceChart"></canvas>
+</div>
+    </div>
 
-<div class="dashboard-middle">
-
-<div class="chart-box">
-
-<h3>Report Status</h3>
-
-<canvas id="reportChart"></canvas>
+    <div class="section">
+        <h2>Workshop Statistics</h2>
+        <canvas id="yearChart"></canvas>
+    </div>
 
 </div>
+<div class="dashboard-grid">
 
-<div class="chart-box">
+    <div class="section">
 
-<h3>Workshop Attendance Count</h3>
+        <h2>Recent Reports</h2>
 
-<canvas id="barChart"></canvas>
+        <table class="dashboard-table">
 
+            <tr>
+                <th>Employee</th>
+                <th>Year</th>
+                <th>Status</th>
+            </tr>
+
+            <?php if ($recentReports->num_rows > 0) { ?>
+
+                <?php while ($row = $recentReports->fetch_assoc()) { ?>
+
+                    <tr>
+                        <td><?php echo htmlspecialchars($row["name"]); ?></td>
+                        <td><?php echo htmlspecialchars($row["workshop_year"]); ?></td>
+                        <td>
+                            <span class="<?php echo strtolower($row["status"]); ?>">
+                                <?php echo htmlspecialchars($row["status"]); ?>
+                            </span>
+                        </td>
+                    </tr>
+
+                <?php } ?>
+
+            <?php } else { ?>
+
+                <tr>
+                    <td colspan="3">No reports available.</td>
+                </tr>
+
+            <?php } ?>
+
+        </table>
+
+    </div>
+
+    <div class="section">
+
+        <h2>Latest Activities</h2>
+
+        <?php if ($activities->num_rows > 0) { ?>
+
+            <?php while ($row = $activities->fetch_assoc()) { ?>
+
+                <div class="activity-item">
+
+                    <div class="activity-dot"></div>
+
+                    <div>
+
+                        <h4><?php echo htmlspecialchars($row["activity"]); ?></h4>
+
+                        <p><?php echo date("d M Y h:i A", strtotime($row["activity_date"])); ?></p>
+
+                    </div>
+
+                </div>
+
+            <?php } ?>
+
+        <?php } else { ?>
+
+            <p class="empty-text">No activities available.</p>
+
+        <?php } ?>
+
+    </div>
+
+</div>
 </div>
 
 </div>
 
 <script>
+const attendanceChart = document.getElementById("attendanceChart");
 
-new Chart(
+new Chart(attendanceChart,{
+    type:"pie",
+    data:{
+        labels:["Attended","Pending","Absent"],
+        datasets:[{
+            data:[
+                <?php echo $attendedCount; ?>,
+                <?php echo $pendingCount; ?>,
+                <?php echo $absentCount; ?>
+            ],
+            backgroundColor:[
+                "#22C55E",
+                "#F59E0B",
+                "#EF4444"
+            ],
+            radius:"100%"
+        }]
+    },
+    options:{
+        responsive:true,
+        plugins:{
+            legend:{
+                labels:{
+                    color:"#fff"
+                }
+            }
+        }
+    }
+});
 
-document.getElementById("reportChart"),
+const yearChart=document.getElementById("yearChart");
 
-{
-
-type:"doughnut",
-
-data:{
-
-labels:[
-
-"Verified",
-
-"Pending"
-
-],
-
-datasets:[{
-
-data:[
-
-<?php echo $verified['total']; ?>,
-
-<?php echo $pending['total']; ?>
-
-],
-
-backgroundColor:[
-
-"#22c55e",
-
-"#f59e0b"
-
-],
-
-borderWidth:0
-
-}]
-
-},
-
-options:{
-
-responsive:true,
-
-plugins:{
-
-legend:{
-
-position:"bottom",
-
-labels:{
-
-color:"white"
-
-}
-
-}
-
-}
-
-}
-
-}
-
-);
-
+new Chart(yearChart,{
+    type:"bar",
+    data:{
+        labels:<?php echo json_encode($years); ?>,
+        datasets:[{
+            label:"Employees",
+            data:<?php echo json_encode($yearTotals); ?>,
+            backgroundColor:"#3B82F6",
+            borderRadius:8
+        }]
+    },
+    options:{
+        responsive:true,
+        plugins:{
+            legend:{
+                labels:{
+                    color:"#fff"
+                }
+            }
+        },
+        scales:{
+            x:{
+                ticks:{
+                    color:"#fff"
+                },
+                grid:{
+                    color:"rgba(255,255,255,.1)"
+                }
+            },
+            y:{
+                beginAtZero:true,
+                ticks:{
+                    color:"#fff"
+                },
+                grid:{
+                    color:"rgba(255,255,255,.1)"
+                }
+            }
+        }
+    }
+});
 </script>
 
 </body>
