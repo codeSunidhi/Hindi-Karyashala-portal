@@ -100,3 +100,6 @@ VALUES
 (1008,'Hindi Workshop 2025',2025,'2025-01-16','Attended','Completed',1002),
 (1009,'Hindi Workshop 2025',2025,'2025-01-17','Absent','Official duty',1002),
 (1010,'Hindi Workshop 2025',2025,'2025-01-17','Pending','Waiting',1002);
+
+ALTER TABLE reports
+DROP FOREIGN KEY reports_ibfk_2;
