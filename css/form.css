@@ -1,3 +1,364 @@
+/* =========================================
+   FORM CARD
+========================================= */
+
+.form-card{
+    width:100%;
+    max-width:1100px;
+    margin:0 auto;
+    padding:35px;
+    background:rgba(255,255,255,.08);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:18px;
+    box-shadow:0 15px 35px rgba(0,0,0,.15);
+}
+
+
+/* =========================================
+   FORM GRID
+========================================= */
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:24px;
+}
+
+
+/* =========================================
+   FORM GROUP
+========================================= */
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+}
+
+.form-group label{
+    color:#fff;
+    font-size:14px;
+    font-weight:600;
+    margin-bottom:9px;
+}
+
+
+/* =========================================
+   INPUT / SELECT / TEXTAREA
+========================================= */
+
+.form-group input,
+.form-group select,
+.form-group textarea{
+    width:100%;
+    padding:13px 15px;
+    border:1px solid rgba(255,255,255,.15);
+    outline:none;
+    border-radius:10px;
+    background:rgba(255,255,255,.12);
+    color:#fff;
+    font-family:"Segoe UI",sans-serif;
+    font-size:14px;
+    transition:.3s;
+}
+
+.form-group input{
+    height:48px;
+}
+
+.form-group select{
+    height:48px;
+    cursor:pointer;
+}
+
+.form-group textarea{
+    min-height:120px;
+    resize:vertical;
+}
+
+
+/* =========================================
+   INPUT FOCUS
+========================================= */
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus{
+    border-color:#3B82F6;
+    background:rgba(255,255,255,.16);
+    box-shadow:0 0 0 3px rgba(59,130,246,.15);
+}
+
+
+/* =========================================
+   READONLY INPUT
+========================================= */
+
+.form-group input[readonly]{
+    background:rgba(255,255,255,.05);
+    color:#d1d5db;
+    cursor:not-allowed;
+}
+
+
+/* =========================================
+   SELECT OPTIONS
+========================================= */
+
+.form-group select option{
+    background:#23364d;
+    color:#fff;
+}
+
+
+/* =========================================
+   FULL WIDTH FIELD
+========================================= */
+
+.full,
+.full-width{
+    grid-column:1 / -1;
+}
+
+
+/* =========================================
+   SECTION TITLE
+========================================= */
+
+.section-title{
+    grid-column:1 / -1;
+    margin-top:10px;
+    margin-bottom:0;
+}
+
+.section-title h3{
+    color:#fff;
+    font-size:20px;
+    font-weight:600;
+    padding-bottom:12px;
+    margin-bottom:5px;
+    border-bottom:1px solid rgba(255,255,255,.15);
+}
+
+
+/* =========================================
+   FORM BUTTONS
+========================================= */
+
+.form-buttons,
+.buttons{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    gap:12px;
+    margin-top:30px;
+}
+
+
+/* =========================================
+   SAVE BUTTON
+========================================= */
+
+.save-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:46px;
+    padding:12px 22px;
+    border:none;
+    border-radius:10px;
+    background:#16A34A;
+    color:#fff;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.save-btn:hover{
+    background:#15803D;
+    transform:translateY(-2px);
+    box-shadow:0 8px 20px rgba(22,163,74,.25);
+}
+
+
+/* =========================================
+   REPORT BUTTON
+========================================= */
+
+.report-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:46px;
+    padding:12px 22px;
+    border:none;
+    border-radius:10px;
+    background:#2563EB;
+    color:#fff;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.report-btn:hover{
+    background:#1D4ED8;
+    transform:translateY(-2px);
+    box-shadow:0 8px 20px rgba(37,99,235,.25);
+}
+
+
+/* =========================================
+   CANCEL BUTTON
+========================================= */
+
+.cancel-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:46px;
+    padding:12px 22px;
+    border:none;
+    border-radius:10px;
+    background:#E5E7EB;
+    color:#374151;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.cancel-btn:hover{
+    background:#D1D5DB;
+    transform:translateY(-2px);
+}
+
+
+/* =========================================
+   DELETE BUTTON
+========================================= */
+
+.delete-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:46px;
+    padding:12px 22px;
+    border:none;
+    border-radius:10px;
+    background:#EF4444;
+    color:#fff;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.delete-btn:hover{
+    background:#DC2626;
+    transform:translateY(-2px);
+}
+
+
+/* =========================================
+   ERROR MESSAGE
+========================================= */
+
+.error{
+    margin-top:20px;
+    padding:12px 15px;
+    border-radius:10px;
+    background:rgba(239,68,68,.15);
+    border:1px solid rgba(239,68,68,.3);
+    color:#FCA5A5;
+    font-size:14px;
+    font-weight:600;
+}
+
+
+/* =========================================
+   SUCCESS MESSAGE
+========================================= */
+
+.message{
+    margin:0 0 25px;
+    padding:14px 18px;
+    border-radius:10px;
+    background:rgba(22,163,74,.15);
+    border:1px solid rgba(22,163,74,.3);
+    color:#86EFAC;
+    font-size:14px;
+    font-weight:600;
+}
+
+
+/* =========================================
+   MOBILE RESPONSIVE
+========================================= */
+
+@media(max-width:768px){
+
+    .form-card{
+        padding:22px;
+    }
+
+    .form-grid{
+        grid-template-columns:1fr;
+        gap:18px;
+    }
+
+    .full,
+    .full-width,
+    .section-title{
+        grid-column:auto;
+    }
+
+    .form-buttons,
+    .buttons{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .save-btn,
+    .report-btn,
+    .cancel-btn,
+    .delete-btn{
+        width:100%;
+    }
+
+}
+
+
+/* =========================================
+   SMALL MOBILE
+========================================= */
+
+@media(max-width:480px){
+
+    .form-card{
+        padding:18px;
+        border-radius:14px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea{
+        font-size:13px;
+    }
+
+}
+
+
 .form-card{
     width:90%;
     max-width:1200px;
@@ -182,28 +543,4 @@
     .cancel-btn{
         width:100%;
     }
-}
-
-.form-card{
-    width:100%;
-    max-width:none;
-    margin:0;
-}
-
-.form-buttons{
-    display:flex;
-    align-items:center;
-    gap:15px;
-    margin-top:30px;
-}
-
-.form-buttons a,
-.form-buttons button{
-    text-decoration:none;
-}
-
-.cancel-btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
 }
